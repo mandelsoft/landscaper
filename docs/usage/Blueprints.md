@@ -1,8 +1,14 @@
 # Blueprints
 
-Blueprints describe the steps that are necessary to deploy a component/application. These steps can consist of deploy items or other blueprints which are assembled using installation templates.
+A Blueprint is a parameterized description of how to deploy a specific component.
 
-A Blueprint is a filesystem that contains the blueprint definition at `/blueprint.yaml`. Other additional files can be added optionally.
+The description follows the kubernetes operator approach:
+
+The task of a Blueprint is to provide deployitem descriptions based on its input and outputs based on the input and the state of the deployment.
+
+The rendered deployitems are then handled by independent kubernetes operators, which perform the real deployment tasks. This way, the Blueprint does not execute deployment actions, but provides the target state of formally described deployitems. The actions described by the Blueprint itself are therefore restricted to YAML-based manifest rendering. These actions are described by [template executions](./Templating.md).
+
+A Blueprint is a filesystem structure that contains the blueprint definition at `/blueprint.yaml`. Any other additional file can be referred to in the blueprint.yaml for JSON schema definitions and templates.
 
 Every Blueprint must have a corresponding component descriptor that is used to reference the Blueprint and define its the dependencies.
 
@@ -17,8 +23,8 @@ my-blueprint
 - [Blueprint](#blueprint)
   - [blueprint.yaml Definition](#blueprintyaml-definition)
     - [Import and Export Definitions](#import-and-export-definitions)
-    - [DeployExecutions](#deployexecutions)
-    - [ExportExecutions](#exportexecutions)
+    - [DeployItem Templates](#deployitem-templates)
+    - [Export Templates](#export-templates)
     - [Installation Templates](#installation-templates)
   - [Remote Access](#remote-access)
     - [Local](#local)
@@ -245,7 +251,7 @@ imports:
 Use the `componentDescriptorList` type for this. Exporting is not possible.
 
 
-### DeployExecutions
+### DeployItem Templates
 
 A Blueprint's deploy executions may contain any number of template executors. 
 A template executor must return a list of deploy items templates.<br>
@@ -392,7 +398,7 @@ deployExecutions:
             {{- generateImageOverwrite .cd .imports.my-cdlist | toYaml | nindent 12 }}
 ```
 
-### ExportExecutions
+### Export Templates
 
 A Blueprint's export executions may contain any number of template executors. 
 A template executor must return a map of `export name` to `exported value`.<br>

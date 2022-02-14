@@ -58,7 +58,7 @@ type ExecutionTemplater interface {
 	// It return the exported data as key value map where the key is the name of the export.
 	TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecutor,
 		blueprint *blueprints.Blueprint,
-		exports interface{}) (*ExportExecutorOutput, error)
+		exports map[string]interface{}) (*ExportExecutorOutput, error)
 }
 
 // SubinstallationExecutorOutput describes the output of deploy executor.
@@ -238,8 +238,8 @@ func validateDeployItemList(fldPath *field.Path, list lsv1alpha1.DeployItemTempl
 	return validation.ValidateDeployItemTemplateList(fldPath, coreList).ToAggregate()
 }
 
-// TemplateExportExecutions templates all deploy executions and returns a aggregated list of all templated deploy item templates.
-func (o *Templater) TemplateExportExecutions(blueprint *blueprints.Blueprint, exports interface{}) (map[string]interface{}, error) {
+// TemplateExportExecutions templates all exports.
+func (o *Templater) TemplateExportExecutions(blueprint *blueprints.Blueprint, exports map[string]interface{}) (map[string]interface{}, error) {
 	exportData := make(map[string]interface{})
 	for _, tmplExec := range blueprint.Info.ExportExecutions {
 

@@ -119,7 +119,7 @@ func (t *Templater) TemplateDeployExecutions(tmplExec lsv1alpha1.TemplateExecuto
 	return output, nil
 }
 
-func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint, exports interface{}) (*template.ExportExecutorOutput, error) {
+func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint, exports map[string]interface{}) (*template.ExportExecutorOutput, error) {
 	rawTemplate, err := t.templateNode(tmplExec, blueprint)
 	if err != nil {
 		return nil, err
@@ -133,6 +133,9 @@ func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 
 	values := map[string]interface{}{
 		"values": exports,
+	}
+	for k, v := range exports {
+		values[k] = v
 	}
 	spiff, err := spiffing.New().WithFileSystem(blueprint.Fs).WithValues(values)
 	if err != nil {
