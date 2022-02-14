@@ -131,7 +131,10 @@ func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 		return nil, fmt.Errorf("unable to load state: %w", err)
 	}
 
-	spiff, err := spiffing.New().WithFileSystem(blueprint.Fs).WithValues(values)
+	functions := spiffing.NewFunctions()
+	LandscaperSpiffFuncs(functions, descriptor, cdList)
+
+	spiff, err := spiffing.New().WithFunctions(functions).WithFileSystem(blueprint.Fs).WithValues(values)
 	if err != nil {
 		return nil, fmt.Errorf("unable to init spiff templater: %w", err)
 	}

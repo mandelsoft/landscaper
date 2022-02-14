@@ -183,7 +183,7 @@ func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 	}
 
 	values["state"] = state
-	data, err := t.TemplateExecution(rawTemplate, blueprint, nil, nil, values)
+	data, err := t.TemplateExecution(rawTemplate, blueprint, descriptor, cdList, values)
 	if err != nil {
 		return nil, fmt.Errorf("unable to execute template: %w", err)
 	}
