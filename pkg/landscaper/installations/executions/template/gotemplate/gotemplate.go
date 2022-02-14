@@ -168,7 +168,8 @@ func (t *Templater) TemplateDeployExecutions(tmplExec lsv1alpha1.TemplateExecuto
 	return output, nil
 }
 
-func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint, exports map[string]interface{}) (*lstmpl.ExportExecutorOutput, error) {
+func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint,
+	descriptor *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList, values map[string]interface{}) (*lstmpl.ExportExecutorOutput, error) {
 	rawTemplate, err := getTemplateFromExecution(tmplExec, blueprint)
 	if err != nil {
 		return nil, err
@@ -181,13 +182,7 @@ func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 		return nil, fmt.Errorf("unable to load state: %w", err)
 	}
 
-	values := map[string]interface{}{
-		"values": exports,
-		"state":  state,
-	}
-	for k, v := range exports {
-		values[k] = v
-	}
+	values["state"] = state
 	data, err := t.TemplateExecution(rawTemplate, blueprint, nil, nil, values)
 	if err != nil {
 		return nil, fmt.Errorf("unable to execute template: %w", err)

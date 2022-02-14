@@ -57,13 +57,15 @@ func (o *ExecutionOperation) Ensure(ctx context.Context, inst *installations.Ins
 		Inst:       inst.Info,
 	}
 	tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
-	executions, err := tmpl.TemplateDeployExecutions(template.DeployExecutionOptions{
-		Imports:              inst.GetImports(),
-		Installation:         o.Context().External.InjectComponentDescriptorRef(inst.Info),
-		Blueprint:            inst.Blueprint,
-		ComponentDescriptor:  o.ComponentDescriptor,
-		ComponentDescriptors: o.ResolvedComponentDescriptorList,
-	})
+	executions, err := tmpl.TemplateDeployExecutions(
+		template.NewDeployExecutionOptions(
+			template.NewBlueprintExecutionOptions(
+				o.Context().External.InjectComponentDescriptorRef(inst.Info),
+				inst.Blueprint,
+				o.ComponentDescriptor,
+				o.ResolvedComponentDescriptorList),
+			inst.GetImports()))
+
 	if err != nil {
 		inst.MergeConditions(lsv1alpha1helper.UpdatedCondition(cond, lsv1alpha1.ConditionFalse,
 			TemplatingFailedReason, "Unable to template executions"))

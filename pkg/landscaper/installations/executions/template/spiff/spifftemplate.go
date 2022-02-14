@@ -119,7 +119,7 @@ func (t *Templater) TemplateDeployExecutions(tmplExec lsv1alpha1.TemplateExecuto
 	return output, nil
 }
 
-func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint, exports map[string]interface{}) (*template.ExportExecutorOutput, error) {
+func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint, descriptor *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList, values map[string]interface{}) (*template.ExportExecutorOutput, error) {
 	rawTemplate, err := t.templateNode(tmplExec, blueprint)
 	if err != nil {
 		return nil, err
@@ -131,12 +131,6 @@ func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 		return nil, fmt.Errorf("unable to load state: %w", err)
 	}
 
-	values := map[string]interface{}{
-		"values": exports,
-	}
-	for k, v := range exports {
-		values[k] = v
-	}
 	spiff, err := spiffing.New().WithFileSystem(blueprint.Fs).WithValues(values)
 	if err != nil {
 		return nil, fmt.Errorf("unable to init spiff templater: %w", err)

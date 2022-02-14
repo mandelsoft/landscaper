@@ -58,7 +58,9 @@ type ExecutionTemplater interface {
 	// It return the exported data as key value map where the key is the name of the export.
 	TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecutor,
 		blueprint *blueprints.Blueprint,
-		exports map[string]interface{}) (*ExportExecutorOutput, error)
+		descriptor *cdv2.ComponentDescriptor,
+		cdList *cdv2.ComponentDescriptorList,
+		values map[string]interface{}) (*ExportExecutorOutput, error)
 }
 
 // SubinstallationExecutorOutput describes the output of deploy executor.
@@ -104,52 +106,13 @@ type ExportExecutorOutput struct {
 	Exports map[string]interface{} `json:"exports"`
 }
 
-// DeployExecutionOptions describes the options for templating the deploy executions.
-type DeployExecutionOptions struct {
-	Imports map[string]interface{}
-	// +optional
-	Installation         *lsv1alpha1.Installation
-	Blueprint            *blueprints.Blueprint
-	ComponentDescriptor  *cdv2.ComponentDescriptor
-	ComponentDescriptors *cdv2.ComponentDescriptorList
-}
-
 // TemplateSubinstallationExecutions templates all subinstallation executions and
 // returns a aggregated list of all templated installation templates.
 func (o *Templater) TemplateSubinstallationExecutions(opts DeployExecutionOptions) ([]*lsv1alpha1.InstallationTemplate, error) {
-	// marshal and unmarshal resolved component descriptor
-	component, err := serializeComponentDescriptor(opts.ComponentDescriptor)
+	values, err := opts.Values()
 	if err != nil {
-		return nil, fmt.Errorf("error during serializing of the resolved components: %w", err)
+		return nil, err
 	}
-	components, err := serializeComponentDescriptorList(opts.ComponentDescriptors)
-	if err != nil {
-		return nil, fmt.Errorf("error during serializing of the component descriptor: %w", err)
-	}
-
-	values := map[string]interface{}{
-		"imports":    opts.Imports,
-		"cd":         component,
-		"components": components,
-	}
-
-	// add blueprint and component descriptor ref information to the input values
-	if opts.Installation != nil {
-		blueprintDef, err := utils.JSONSerializeToGenericObject(opts.Installation.Spec.Blueprint)
-		if err != nil {
-			return nil, fmt.Errorf("unable to serialize the blueprint definition")
-		}
-		values["blueprint"] = blueprintDef
-
-		if opts.Installation.Spec.ComponentDescriptor != nil {
-			cdDef, err := utils.JSONSerializeToGenericObject(opts.Installation.Spec.ComponentDescriptor)
-			if err != nil {
-				return nil, fmt.Errorf("unable to serialize the component descriptor definition")
-			}
-			values["componentDescriptorDef"] = cdDef
-		}
-	}
-
 	installationTemplates := make([]*lsv1alpha1.InstallationTemplate, 0)
 	for _, tmplExec := range opts.Blueprint.Info.SubinstallationExecutions {
 		impl, ok := o.impl[tmplExec.Type]
@@ -173,37 +136,9 @@ func (o *Templater) TemplateSubinstallationExecutions(opts DeployExecutionOption
 // TemplateDeployExecutions templates all deploy executions and returns a aggregated list of all templated deploy item templates.
 func (o *Templater) TemplateDeployExecutions(opts DeployExecutionOptions) ([]lsv1alpha1.DeployItemTemplate, error) {
 
-	// marshal and unmarshal resolved component descriptor
-	component, err := serializeComponentDescriptor(opts.ComponentDescriptor)
+	values, err := opts.Values()
 	if err != nil {
-		return nil, fmt.Errorf("error during serializing of the resolved components: %w", err)
-	}
-	components, err := serializeComponentDescriptorList(opts.ComponentDescriptors)
-	if err != nil {
-		return nil, fmt.Errorf("error during serializing of the component descriptor: %w", err)
-	}
-
-	values := map[string]interface{}{
-		"imports":    opts.Imports,
-		"cd":         component,
-		"components": components,
-	}
-
-	// add blueprint and component descriptor ref information to the input values
-	if opts.Installation != nil {
-		blueprintDef, err := utils.JSONSerializeToGenericObject(opts.Installation.Spec.Blueprint)
-		if err != nil {
-			return nil, fmt.Errorf("unable to serialize the blueprint definition")
-		}
-		values["blueprint"] = blueprintDef
-
-		if opts.Installation.Spec.ComponentDescriptor != nil {
-			cdDef, err := utils.JSONSerializeToGenericObject(opts.Installation.Spec.ComponentDescriptor)
-			if err != nil {
-				return nil, fmt.Errorf("unable to serialize the component descriptor definition")
-			}
-			values["componentDescriptorDef"] = cdDef
-		}
+		return nil, err
 	}
 
 	deployItemTemplateList := lsv1alpha1.DeployItemTemplateList{}
@@ -239,16 +174,20 @@ func validateDeployItemList(fldPath *field.Path, list lsv1alpha1.DeployItemTempl
 }
 
 // TemplateExportExecutions templates all exports.
-func (o *Templater) TemplateExportExecutions(blueprint *blueprints.Blueprint, exports map[string]interface{}) (map[string]interface{}, error) {
+func (o *Templater) TemplateExportExecutions(opts ExportExecutionOptions) (map[string]interface{}, error) {
+	values, err := opts.Values()
+	if err != nil {
+		return nil, err
+	}
 	exportData := make(map[string]interface{})
-	for _, tmplExec := range blueprint.Info.ExportExecutions {
+	for _, tmplExec := range opts.Blueprint.Info.ExportExecutions {
 
 		impl, ok := o.impl[tmplExec.Type]
 		if !ok {
 			return nil, fmt.Errorf("unknown template type %s", tmplExec.Type)
 		}
 
-		output, err := impl.TemplateExportExecutions(tmplExec, blueprint, exports)
+		output, err := impl.TemplateExportExecutions(tmplExec, opts.Blueprint, opts.ComponentDescriptor, opts.ComponentDescriptors, values)
 		if err != nil {
 			return nil, err
 		}
