@@ -23,9 +23,10 @@ my-blueprint
 - [Blueprint](#blueprint)
   - [blueprint.yaml Definition](#blueprintyaml-definition)
     - [Import and Export Definitions](#import-and-export-definitions)
-    - [DeployItem Templates](#deployitem-templates)
-    - [Export Templates](#export-templates)
-    - [Installation Templates](#installation-templates)
+    - [Templating](#templating)
+      - [DeployItem Templates](#deployitem-templates)
+      - [Export Templates](#export-templates)
+      - [Installation Templates](#installation-templates)
   - [Remote Access](#remote-access)
     - [Local](#local)
     - [OCI](#oci)
@@ -37,7 +38,7 @@ A Blueprint is a versioned configuration file that consists of
 - imports
 - exports
 - deployExecutions
-- exportExecution
+- exportExecutions
 - subinstallation
 
 It is defined by a YAML definition that sits on the top level inside the blueprints filesystem.
@@ -250,8 +251,19 @@ imports:
 
 Use the `componentDescriptorList` type for this. Exporting is not possible.
 
+### Templating
 
-### DeployItem Templates
+All template executions get a common standardized binding:
+- **`imports`**
+  the imports of the installation, as a mapping from import name to assigned values
+- **`cd`**
+  the component descriptor of the owning component
+- **`blueprintDef`**
+  the blueprint definition, as given in the installation (not the blueprint.yaml itself)
+- **`componentDescriptorDef`**
+  the component descriptor definition, as given in the installation (not the component descriptor itself)
+
+#### DeployItem Templates
 
 A Blueprint's deploy executions may contain any number of template executors. 
 A template executor must return a list of deploy items templates.<br>
@@ -398,7 +410,7 @@ deployExecutions:
             {{- generateImageOverwrite .cd .imports.my-cdlist | toYaml | nindent 12 }}
 ```
 
-### Export Templates
+#### Export Templates
 
 A Blueprint's export executions may contain any number of template executors. 
 A template executor must return a map of `export name` to `exported value`.<br>
@@ -468,7 +480,7 @@ exportExecutions:
         config: {{ .values.targets.dev-cluster.spec.config  }}
 ```
 
-### Installation Templates
+#### Installation Templates
 Installation Templates are used to include subinstallation in a blueprint.
 As the name suggest, they are templates for installation which means that the landscaper will create installation based on these templates.
 
@@ -539,7 +551,7 @@ subinstallationExecutions:
 ```
 
 
-#### Targetlist Imports in Subinstallations
+##### Targetlist Imports in Subinstallations
 
 To import a targetlist that has been imported by a parent installation, use `targetListRef` to reference the name of the parent import.
 
@@ -562,7 +574,7 @@ subinstallations:
 ```
 
 
-#### Component Descriptor Imports in Subinstallations
+##### Component Descriptor Imports in Subinstallations
 
 Only root installations can directly reference component descriptors in their imports. In subinstallations, it is only possible to reference a component descriptor which has already been imported by the parent. Therefore, only the fields `dataRef` and `list` are allowed in component descriptor imports in subinstallations.
 With `dataRef`, a single component descriptor or a list of component descriptors imported by the parent can be referenced.

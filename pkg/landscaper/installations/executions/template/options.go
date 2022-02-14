@@ -58,6 +58,7 @@ func (o *BlueprintExecutionOptions) Values() (map[string]interface{}, error) {
 			return nil, fmt.Errorf("unable to serialize the blueprint definition")
 		}
 		values["blueprint"] = blueprintDef
+		values["blueprintDef"] = blueprintDef
 
 		if o.Installation.Spec.ComponentDescriptor != nil {
 			cdDef, err := utils.JSONSerializeToGenericObject(o.Installation.Spec.ComponentDescriptor)
