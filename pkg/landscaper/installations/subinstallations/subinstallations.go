@@ -256,8 +256,8 @@ func (o *Operation) getInstallationTemplates() ([]*lsv1alpha1.InstallationTempla
 				o.Context().External.InjectComponentDescriptorRef(o.Inst.Info.DeepCopy()),
 				o.Inst.Blueprint,
 				o.ComponentDescriptor,
-				o.ResolvedComponentDescriptorList),
-			o.Inst.GetImports()))
+				o.ResolvedComponentDescriptorList,
+				o.Inst.GetImports())))
 
 		if err != nil {
 			return nil, fmt.Errorf("unable to template subinstllations: %w", err)

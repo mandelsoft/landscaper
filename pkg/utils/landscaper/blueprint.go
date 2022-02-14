@@ -227,8 +227,8 @@ func RenderBlueprintDeployItems(
 	templateStateHandler := template.NewMemoryStateHandler()
 	deployItemTemplates, err := template.New(gotemplate.New(blobResolver, templateStateHandler), spiff.New(templateStateHandler)).
 		TemplateDeployExecutions(template.NewDeployExecutionOptions(template.NewBlueprintExecutionOptions(
-			inst, blueprint, cd, cdList),
-			imports.Imports))
+			inst, blueprint, cd, cdList,
+			imports.Imports)))
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to template deploy executions: %w", err)
 	}
@@ -262,8 +262,8 @@ func RenderBlueprintSubInstallations(
 	templateStateHandler := template.NewMemoryStateHandler()
 	subInstallationTemplates, err := template.New(gotemplate.New(nil, templateStateHandler), spiff.New(templateStateHandler)).
 		TemplateSubinstallationExecutions(template.NewDeployExecutionOptions(
-			template.NewBlueprintExecutionOptions(inst, blueprint, cd, cdList),
-			imports.Imports))
+			template.NewBlueprintExecutionOptions(inst, blueprint, cd, cdList,
+				imports.Imports)))
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to template subinstalltion executions: %w", err)
 	}

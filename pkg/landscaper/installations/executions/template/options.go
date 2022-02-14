@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
+
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
 	"github.com/gardener/landscaper/pkg/utils"
@@ -19,15 +20,17 @@ type BlueprintExecutionOptions struct {
 	Blueprint            *blueprints.Blueprint
 	ComponentDescriptor  *cdv2.ComponentDescriptor
 	ComponentDescriptors *cdv2.ComponentDescriptorList
+	Imports              map[string]interface{}
 }
 
 // NewBlueprintExecutionOptions create new basic blueprint execution options
-func NewBlueprintExecutionOptions(installation *lsv1alpha1.Installation, blueprint *blueprints.Blueprint, cd *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList) BlueprintExecutionOptions {
+func NewBlueprintExecutionOptions(installation *lsv1alpha1.Installation, blueprint *blueprints.Blueprint, cd *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList, imports map[string]interface{}) BlueprintExecutionOptions {
 	return BlueprintExecutionOptions{
 		Installation:         installation,
 		Blueprint:            blueprint,
 		ComponentDescriptor:  cd,
 		ComponentDescriptors: cdList,
+		Imports:              imports,
 	}
 }
 
@@ -45,6 +48,7 @@ func (o *BlueprintExecutionOptions) Values() (map[string]interface{}, error) {
 	values := map[string]interface{}{
 		"cd":         component,
 		"components": components,
+		"imports":    o.Imports,
 	}
 
 	// add blueprint and component descriptor ref information to the input values
@@ -71,24 +75,16 @@ func (o *BlueprintExecutionOptions) Values() (map[string]interface{}, error) {
 // DeployExecutionOptions describes the options for templating the deploy executions.
 type DeployExecutionOptions struct {
 	BlueprintExecutionOptions
-	Imports map[string]interface{}
 }
 
-func NewDeployExecutionOptions(base BlueprintExecutionOptions, imports map[string]interface{}) DeployExecutionOptions {
+func NewDeployExecutionOptions(base BlueprintExecutionOptions) DeployExecutionOptions {
 	return DeployExecutionOptions{
 		BlueprintExecutionOptions: base,
-		Imports:                   imports,
 	}
 }
 
 func (o *DeployExecutionOptions) Values() (map[string]interface{}, error) {
-	values, err := o.BlueprintExecutionOptions.Values()
-	if err != nil {
-		return nil, err
-	}
-	values["values"] = o.Imports
-	values["imports"] = o.Imports
-	return values, nil
+	return o.BlueprintExecutionOptions.Values()
 }
 
 ////////////////////////////////////////////////////////////////////////////////

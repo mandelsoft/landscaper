@@ -63,8 +63,8 @@ func (o *ExecutionOperation) Ensure(ctx context.Context, inst *installations.Ins
 				o.Context().External.InjectComponentDescriptorRef(inst.Info),
 				inst.Blueprint,
 				o.ComponentDescriptor,
-				o.ResolvedComponentDescriptorList),
-			inst.GetImports()))
+				o.ResolvedComponentDescriptorList,
+				inst.GetImports())))
 
 	if err != nil {
 		inst.MergeConditions(lsv1alpha1helper.UpdatedCondition(cond, lsv1alpha1.ConditionFalse,

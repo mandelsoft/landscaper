@@ -75,7 +75,7 @@ func (c *Constructor) Construct(ctx context.Context) ([]*dataobjects.DataObject,
 	}
 	exports, err := template.New(gotemplate.New(c.BlobResolver, stateHdlr), spiff.New(stateHdlr)).
 		TemplateExportExecutions(template.NewExportExecutionOptions(template.NewBlueprintExecutionOptions(
-			c.Inst.GetInfo(), c.Inst.Blueprint, c.ComponentDescriptor, c.ResolvedComponentDescriptorList),
+			c.Inst.GetInfo(), c.Inst.Blueprint, c.ComponentDescriptor, c.ResolvedComponentDescriptorList, c.Inst.GetImports()),
 			internalExports))
 	if err != nil {
 		return nil, nil, err
