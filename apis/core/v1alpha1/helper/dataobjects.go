@@ -34,6 +34,9 @@ func GenerateDataObjectName(context string, name string) string {
 	if strings.HasPrefix(name, NonContextifiedPrefix) {
 		return strings.TrimPrefix(name, NonContextifiedPrefix)
 	}
+	if len(context) == 0 {
+		return name
+	}
 	doName := fmt.Sprintf("%s/%s", context, name)
 	h := sha1.New()
 	_, _ = h.Write([]byte(doName))

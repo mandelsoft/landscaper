@@ -19,31 +19,32 @@ my-blueprint
 └── blueprint.yaml
 ```
 
+The blueprint definition (blueprint.yaml) describes
+- declaration of import parameters
+- declaration of export parameters
+- JSONSchema definitions
+- generation rules for deployitems
+- generation rules for export values
+- generation of nested installations
+
+
 **Index**:
-- [Blueprint](#blueprint)
-  - [blueprint.yaml Definition](#blueprintyaml-definition)
-    - [Import and Export Definitions](#import-and-export-definitions)
-    - [Templating](#templating)
-      - [DeployItem Templates](#deployitem-templates)
-      - [Export Templates](#export-templates)
-      - [Installation Templates](#installation-templates)
-  - [Remote Access](#remote-access)
+- [Blueprints](#blueprints)
+  - [Example](#blueprintyaml-definition)
+  - [Import Definitions](#import-definitions)
+  - [Export Definitions](#export-definitions)
+  - [JSONSchema](#jsonschema)
+  - [Rendering](#rendering)
+    - [DeployItems](#deployitems)
+    - [Export Values](#export-values)
+    - [Nested Installations](#nested-installations)
+  <!-- - [Remote Access](#remote-access)
     - [Local](#local)
-    - [OCI](#oci)
+    - [OCI](#oci) -->
 
-## blueprint.yaml
+## Example
 
-A Blueprint is a versioned configuration file that consists of 
-
-- imports
-- exports
-- deployExecutions
-- exportExecutions
-- subinstallation
-
-It is defined by a YAML definition that sits on the top level inside the blueprints filesystem.
-
-The following snippet shows the structure of a `blueprint.yaml` file. Refer to [apis/.schemes/core-v1alpha1-Blueprint.json](../../apis/.schemes/core-v1alpha1-Blueprint.json) for the automatically generated jsonschema definition.
+The following snippet shows the structure of a `blueprint.yaml` file. It is expected as top-level file in the blueprint filesystem structure. Refer to [apis/.schemes/core-v1alpha1-Blueprint.json](../../apis/.schemes/core-v1alpha1-Blueprint.json) for the automatically generated jsonschema definition.
 
 ```yaml
 apiVersion: landscaper.gardener.cloud/v1alpha1
@@ -68,7 +69,7 @@ imports:
   required: true # required, defaults to true
   type: data # this is a data import
   schema: # expects a jsonschema
-    type: string
+    "$ref": "local://mytype" # references local type
 # Import a target by specifying the targetType
 - name: my-target-import-key
   required: true # required, defaults to true
@@ -109,17 +110,15 @@ exports:
 # For detailed documentation see #DeployExecutions
 deployExecutions: 
 - name: execution-name
-  type: GoTemplate | Spiff
-  file: path to file # path is relative to the blueprint's filesystem root
-  template: # inline template
+  type: GoTemplate
+  file: <path to file> # path is relative to the blueprint's filesystem root
 
 # exportExecutions are a templating mechanism to 
 # template the export.
 # For detailed documentation see #ExportExecutions
 exportExecutions:
 - name: execution-name
-  type: GoTemplate | Spiff
-  file: path to file # path is relative to the blueprint's filesystem root
+  type: Spiff
   template: # inline template
 
 # subinstallations is a list of installation templates.
@@ -140,8 +139,8 @@ subinstallations:
   # It's the same syntax as for default installations.
   imports:
     data:
-    - name: "" # data import name
-      dataRef: "" # dataobject name
+    - name: "parent-data" # data import name
+      dataRef: "data" # dataobject name - refers to import of parent
     targets:
     - name: "" # target import name
       target: "" # target name
@@ -155,101 +154,102 @@ subinstallations:
 
 ```
 
-### Import and Export Definitions
+### Import Definitions
 
-The interface of a blueprint can be described using imports and exports.<br>
-The import definitions describe the data that needed by the blueprint.<br>
-The export definitions describe the data that is produced by the blueprint.<br>
+Blueprints describe formal imports. A formal import parameter has a name and a *value type*. It may describe a single simple value or a complex data structure. There are several *types* of imports, indicating different use cases:
+- **`data`**
+  This type of import is used to import arbitrary data according to its value type. The value type is described by a [JSONSchema](#jsonschema).
+- **`target`**
+  This type declares an import of a [deployment target object](./Targets.md). It is used in the rendered deployitems to specify the target environment for the deployment of the deployitem.
+- **`targetList`**
+  This type can be used if, instead of a single target object, an arbitrary number of targets should be imported. All targets imported as part of a targetlist import must have the same `targetType`.
+- **`componentDescriptor`**
+  This type refers to an import of a component descriptor.
+- **`componentDescriptorList`**
+  Analogous to `targetList`, this type allows importing an arbitrary number of component descriptors.
 
-Imports and Exports always consists of a name (_MUST_ be unique for the blueprint) and can be generally described as _Target_-Im/Exports or _Data_-Im/Exports. The `type` field specifies which one it is.
+The imports are described as a list of import declarations in the blueprint field `.imports`. An import declaration has the following fields:
+- **`name`** *string*
+  Identfier for the import parameter. Can be used in the templating to access the actual import value provided by the installation.
+- **`type`** *type*
+  The type of the import as described above.
+  For backward compatibility, the `type` field is currently optional for *data* and *target* imports, but it is strongly recommended to specify it for each import declaration.
+- **`required`** *bool* (default: `true`)
+  If set to false, the installation does not have to provide this import.
+- **`default`** *any*
+  If the import is not required and not provided by the installation, this default value will be used for it.
+- **`imports`** *list of import declarations*
+  Nested imports only exist if the owning import is satisfied. Cannot be specified for a required import. See [here](./ConditionalImports.md) for further details.
+- **`schema`** *JSONSchema*
+  Must be set for imports of type `data` (only). Describes the structure of the expected import value as [JSONSchema](#jsonschema).
+- **`targetType`** *string*
+  Must be set for imports of type `target` and `targetList` (only). It declares the type of the expected [*Target*](./Targets.md) object. If the `targetType` does not contain a `/`, it will be prefixed with `landscaper.gardener.cloud/`.
 
-> The `type` field is currently optional (for data and target imports) to ensure backward compatibility. This is likely to change in the future and it is strongly recommended to specify a type for each im-/export.
-
+**Example**
 ```yaml
 imports:
-- name: <string> # some unique name
-  required: <boolean> # defaults to true
-  type: <data|target> # type of the imported object
+- name: myimport # some unique name
+  required: false # defaults to true if not set
+  type: data # type of the imported object
+  schema:
+    type: object
+    properties:
+      username:
+        type: string
+      password:
+        type: string
+  default:
+    username: foo
+    password: bar
+- name: mycluster
+  type: target
+  targetType: kubernetes-cluster # will be defaulted to 'landscaper.gardener.cloud/kubernetes-cluster'
 ```
 
-:warning: in the following data import and target import is used as synonym for import and export. The specification applies to both.
+## Export Definitions
 
-For advanced configuration options regarding import definitions, have a look at [conditional imports](./ConditionalImports.md).
+Blueprints describe formal exports. The export declarations are very similar to the import declarations. The following types can be exported:
+- **`data`**
+  This type of export is used to export arbitrary data according to its value type. The value type is described by a [JSONSchema](#jsonschema).
+- **`target`**
+  This type declares an export of a [deployment target object](./Targets.md). It is used in the rendered deployitems to specify the target environment for the deployment of the deployitem.
 
-#### Data Imports
+The exports are described as a list of export declarations in the blueprint field `.exports`. An export declaration has the following fields:
+- **`name`** *string*
+  Identfier for the export parameter. Can be used in the templating to access the actual export value provided by the installation.
+- **`type`** *type*
+  The type of the export as described above.
+  For backward compatibility, the `type` field is currently optional for *data* and *target* exports, but it is strongly recommended to specify it for each export declaration.
+- **`schema`** *JSONSchema*
+  Must be set for exports of type `data` (only). Describes the structure of the expected export value as [JSONSchema](#jsonschema).
+- **`targetType`** *string*
+  Must be set for exports of type `target` (only). It declares the type of the expected [*Target*](./Targets.md) object. If the `targetType` does not contain a `/`, it will be prefixed with `landscaper.gardener.cloud/`.
 
-Data imports are the default import type that can describe arbitrary data in json or yaml format.
-[JSONSchema](https://json-schema.org/) is used to describe the structure fo the data.
+**Example**
+```yaml
+exports:
+- name: myexport
+  type: data
+  schema:
+    type: object
+    properties:
+      username:
+        type: string
+      password:
+        type: string
+- name: myclusterexport
+  type: target
+  targetType: kubernetes-cluster # will be defaulted to 'landscaper.gardener.cloud/kubernetes-cluster'
+```
+
+
+## JSONSchema
+
+[JSONSchemas](https://json-schema.org/) are used to describe the structure of `data` imports and exports. The provided import schema is used to validate the actual import value before executing the blueprint.
 
 It is recommended to provide a description and an example for the structure, so that users of the blueprint know what to provide (see the [json docs](http://json-schema.org/understanding-json-schema/reference/generic.html#annotations)).
 
-```yaml
-imports:
-- name: my-import
-  type: data
-  schema:
-    <jsonschema>
-```
-
 For detailed information about the jsonschema and landscaper specifics see [JSONSchema Docs](./JSONSchema.md)
-
-Data im-/exports have the type `data`.
-
-#### Targets
-
-Targets are a specific type of import and contains additional information that is interpreted by deployers.
-The concept of a Target is to define the environment where a deployer installs/deploys software.
-This means that targets could contain additional information about that environment (e.g. that the target cluster is in a fenced environment and needs to be handled by another deployer instance).
-
-The configuration structure of targets is defined by their type (currently the type is only for identification but later we plan to add some type registration with checks.)
-
-```yaml
-imports:
-- name: my-import
-  type: target
-  targetType: <string> # name of the target type
-```
-
-Target im-/exports have the type `target`.
-
-##### Targetlists
-
-For some scenarios, it might be helpful to import an unknown number of targets. This can be done via a targetlist import.
-
-```yaml
-imports:
-- name: my-import
-  type: targetList
-  targetType: <string> # name of the target type for all targets in the list
-```
-
-All targets of a targetlist *MUST* have the same type, mixing is not possible. Exporting targetlists is not possible.
-
-Targetlist imports have the type `targetList`. Please note that the `type` field is mandatory for targetlist imports - if it is not set, the landscaper will assume that a single target is to be imported.
-
-
-#### Component Descriptors
-
-It is also possible to define imports of component descriptors (see [here](./Installations.md#component-descriptor) for more information on component descriptors).
-There is no configuration for a component descriptor import.
-```yaml
-imports:
-- name: my-import
-  type: componentDescriptor
-```
-
-The type for these imports is `componentDescriptor`. Component descriptors cannot be exported.
-
-##### Component Descriptor Lists
-
-Apart from single component descriptor imports, also a list of them can be imported.
-```yaml
-imports:
-- name: my-import
-  type: componentDescriptorList
-```
-
-Use the `componentDescriptorList` type for this. Exporting is not possible.
 
 ### Templating
 
