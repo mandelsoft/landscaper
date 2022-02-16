@@ -1,6 +1,7 @@
 ## Documentation Index
 
 ### Concepts
+- [Overview](./concepts/Concepts.md)
 - [Glossary](./concepts/Glossary.md)
 - [Installation-Blueprint relationship](./concepts/InstallationBlueprintRelationship.md)
 

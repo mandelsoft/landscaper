@@ -109,7 +109,6 @@ func (o *ExportExecutionOptions) Values() (map[string]interface{}, error) {
 		return nil, err
 	}
 	values["values"] = o.Exports
-	values["exports"] = o.Exports
 
 	for k, v := range o.Exports {
 		values[k] = v

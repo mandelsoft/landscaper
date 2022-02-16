@@ -15,7 +15,10 @@ Every Blueprint must have a corresponding component descriptor that is used to r
 ```
 my-blueprint
 ├── data
-│   └── myadditional data
+│   ├── gotemplate.tmpl
+│   └── <myadditional files>
+├── installations
+│   └── installation.yaml
 └── blueprint.yaml
 ```
 
@@ -30,14 +33,17 @@ The blueprint definition (blueprint.yaml) describes
 
 **Index**:
 - [Blueprints](#blueprints)
-  - [Example](#blueprintyaml-definition)
+  - [Example](#example)
   - [Import Definitions](#import-definitions)
   - [Export Definitions](#export-definitions)
   - [JSONSchema](#jsonschema)
   - [Rendering](#rendering)
     - [DeployItems](#deployitems)
     - [Export Values](#export-values)
-    - [Nested Installations](#nested-installations)
+    - [Templated Installations](#templated-installations)
+  - [Nested Installations](#nested-installations)
+    - [Static Installations](#static-installations)
+    - [Templated Installations](#templated-installations)
   <!-- - [Remote Access](#remote-access)
     - [Local](#local)
     - [OCI](#oci) -->
@@ -154,7 +160,7 @@ subinstallations:
 
 ```
 
-### Import Definitions
+## Import Definitions
 
 Blueprints describe formal imports. A formal import parameter has a name and a *value type*. It may describe a single simple value or a complex data structure. There are several *types* of imports, indicating different use cases:
 - **`data`**
@@ -168,7 +174,7 @@ Blueprints describe formal imports. A formal import parameter has a name and a *
 - **`componentDescriptorList`**
   Analogous to `targetList`, this type allows importing an arbitrary number of component descriptors.
 
-The imports are described as a list of import declarations in the blueprint field `.imports`. An import declaration has the following fields:
+The imports are described as a list of import declarations in the blueprint top-level field `imports`. An import declaration has the following fields:
 - **`name`** *string*
   Identfier for the import parameter. Can be used in the templating to access the actual import value provided by the installation.
 - **`type`** *type*
@@ -214,7 +220,7 @@ Blueprints describe formal exports. The export declarations are very similar to 
 - **`target`**
   This type declares an export of a [deployment target object](./Targets.md). It is used in the rendered deployitems to specify the target environment for the deployment of the deployitem.
 
-The exports are described as a list of export declarations in the blueprint field `.exports`. An export declaration has the following fields:
+The exports are described as a list of export declarations in the blueprint top-level field `exports`. An export declaration has the following fields:
 - **`name`** *string*
   Identfier for the export parameter. Can be used in the templating to access the actual export value provided by the installation.
 - **`type`** *type*
@@ -251,9 +257,16 @@ It is recommended to provide a description and an example for the structure, so 
 
 For detailed information about the jsonschema and landscaper specifics see [JSONSchema Docs](./JSONSchema.md)
 
-### Templating
+## Rendering
 
-All template executions get a common standardized binding:
+The task of a _Blueprint_ is to provide deploy items and final output for
+the data flow among _Installations_ based of their input values provided
+by the actual _Instannation_ is evaluated for.
+
+This is described by rule sets consisting of [templates](./Templating) carried together
+with the blueprint.
+
+All template [executions](./Templating.md) get a common standardized binding:
 - **`imports`**
   the imports of the installation, as a mapping from import name to assigned values
 - **`cd`**
@@ -263,46 +276,66 @@ All template executions get a common standardized binding:
 - **`componentDescriptorDef`**
   the component descriptor definition, as given in the installation (not the component descriptor itself)
 
-#### DeployItem Templates
+Additionally there are context specific bindings and those dependening on the chosen
+template processor.
 
-A Blueprint's deploy executions may contain any number of template executors. 
-A template executor must return a list of deploy items templates.<br>
-A deploy item template exposes specific deploy item fields and will be rendered to DeployItem CRs by the landscaper.
+**Example**
+```yaml
+imports:
+  <import-name>: <import value>
+cd: <component descriptor>
+components: <list of all referenced component descriptors>
+blueprintDef: <blueprint definition> # blueprint definition from the Installation
+componentDescriptorDef: <component descriptor definition> # component descriptor definition from the installation
+```
 
-__DeployItem Template__:
+The rendering result must be a YAML map document.
+The rendered elements are typically expected under a dedicated certain top-level
+node (e.g. `deployItems` for a deploy item execution.
+
+There serveral rendering contexts:
+- [`deployExecutions`](#deployitems) rendering of deploy items produced by the blueprint for the actual installation.
+- [`exportExecutions`](#export-values) rendering of values for the [export parameters](#export-definitions) of the blueprint.
+- [`subinstallationExecutions`](#nested-installations) rendering of installations to instantiated in the context of the actual blueprint execution.
+
+### DeployItems
+
+The main task of a _Blueprint_ is to provide _DeployItems_ Therefore the blueprint
+manifest uses a top-level field `deployExecutions` listing any number of appropriate
+template [executions](./Templating.md). 
+
+**Example**
+```yaml
+deployExecutions:
+  - name: kubernetes
+    type: GoTemplate
+    file: data/gotemplate.tmpl
+```
+
+The template processing is fed with the standard binding and supports [state handling](./Templating#state-handling.
+
+A template execution must return a YAML document with at least the top-level
+node `deployItems`. It is expected to contain a list of deploy item specifications.
+These specification will then be mapped to final _DeployItems_ by the _Landscaper_.
+
+**Example rendered document**:
 ```yaml
 deployItems:
-- name: deploy-item-name # unique identifier of the step
+- name: myfirstitem # unique identifier of the step
   target:
-    name: ""
-    namespace: ""
+    name: my-kubernetes-cluster
+    namespace: my-application
   config:
     apiVersion: mydeployer/v1
     kind: ProviderConfiguration
     ...
 ```
 
-##### Executor Imports
+All lists of deploy item specifications of all template executions are appended to one list as they are specified in the deployExecution.
 
-All template executors are given the same input data that can be used while templating.
-The input consists of the imported values as well as the installations component descriptor.
+**Example**:
 
-For the specific documentation about the available templating engines see [Template Executors](./TemplateExecutors.md).
-
-```yaml
-imports:
-  <import-name>: <import value>
-cd: <component descriptor>
-components: <list of all referenced component descriptors>
-blueprint: <blueprint definition> # blueprint definition from the Installation
-componentDescriptorDef: <component descriptor definition> # component descriptor definition from the installation
-```
-
-All list of deployitem templates of all template executors are appended to one list as they are specified in the deployExecution.
-
-*Example*:
-
-Input values:
+*Input values*:
 ```yaml
 imports:
   replicas: 3
@@ -379,7 +412,7 @@ blueprint:
 #          ...
 ```
 
-
+*Rendered document*:
 ```yaml
 deployExecutions:
 - name: default
@@ -410,94 +443,117 @@ deployExecutions:
             {{- generateImageOverwrite .cd .imports.my-cdlist | toYaml | nindent 12 }}
 ```
 
-#### Export Templates
+### Export Values
 
-A Blueprint's export executions may contain any number of template executors. 
-A template executor must return a map of `export name` to `exported value`.<br>
-Multiple template executor exports will be merged in the defined order, whereas the later defined values overwrites previous templates.
+After a successful deployment of the generated _DeployItems_ the _Blueprint_ 
+may use the provided export information of the the deploy items to generate
+values for its export parameters.
 
-__exports__:
+Therefore the blueprint manifest uses a top-level field `exportExecutions` listing
+any number of appropriate template [executions](./Templating.md).
+
+**Example**
+```yaml
+exportExecutions:
+  - name: kubernetes
+    type: GoTemplate
+    template: |
+       exports:
+         myexport:
+           username: ...
+           password: ...
+```
+
+The template processing is fed with the standard binding and supports [state handling](./Templating#state-handling.
+Additional bindings are provided to access the exports of generated elements:
+
+- **`deployitems`** *map*
+  This map contains a map entry for all generated deploy items according to their configured name.
+  The entry then contains the configured deploy item exports
+- **`dataobjects`** *map*
+  This map contains the values of the nested data objects provided by nested installations.
+- **`targets`** *map*
+  This map contains the values of the nested targets provided by all nested provided by nested installations.
+- **`values`** *map* *(deprecated)*
+  This node is a map with the entries shown above.
+
+A template execution must return a YAML document with at least the top-level
+node `exports`. It is expected to contain a map of export parameters mapped to
+concrete values.
+
+**Example rendered document**:
 ```yaml
 exports:
-  export-name: export-value
-  target-export-name:
-    labels: {}
-    annotations: {}
-    type: "" # target type
-    config: any # target specific config data
+  myexport: # name of the export parameter
+    username: ...
+    password: ...
 ```
 
-All template executors are given the same input data that can be used while templating.
-The input consists of the deploy items export values and all exports of subinstallations.
+The result of multiple template executions exports will be merged in the defined
+order, whereas the later defined values overwrites previous templates. The final
+result must provide a value for all export parameters.
 
-For the specific documentation about the available templating engines see [Template Executors](./TemplateExecutors.md).
 
-```yaml
-values:
-  deployitems:
-    <deployitem step name>: <exported values>
-  dataobjects:
-      <databject name>: <data object value>
-  targets:
-        <target name>: <whole target>
-```
-
-All list of deployitem templates of all template executors are appended to one list as they are specified in the deployExecution.
-
-*Example*:
-
-Input values:
-```yaml
-values:
-  deployitems:
-    deploy:
-      ingressPrefix: my-pref
-  dataobjects:
-     domain: example.com
-  targets:
-    dev-cluster:
-        apiVersion: landscaper.gardener.cloud/v1alpha1
-        kind: Target
-        metadata:
-           name: dev-cluster
-           namespace: default
-        spec:
-          type: landscaper.gardener.cloud/kubernetes-cluster
-          config:
-            kubeconfig: |
-              apiVersion: ...
-```
-
+**Example**
 ```yaml
 exportExecutions:
 - name: default
   type: GoTemplate
   template: |
     exports:
-      url: http://{{ .values.deployitems.ingressPrefix  }}.{{ .values.dataobjects.domain }} # resolves to http://my-pref.example.com
+      url: http://{{ .deployitems.ingressPrefix  }}.{{ .dataobjects.domain }} # resolves to http://my-pref.example.com
       cluster:
-        type: {{ .values.targets.dev-cluster.spec.type  }}
-        config: {{ .values.targets.dev-cluster.spec.config  }}
+        type: {{ .targets.dev-cluster.spec.type  }}
+        config: {{ .targets.dev-cluster.spec.config  }}
 ```
 
-#### Installation Templates
-Installation Templates are used to include subinstallation in a blueprint.
-As the name suggest, they are templates for installation which means that the landscaper will create installation based on these templates.
+## Nested Installations
 
-These subinstallations have a context that is defined by the parent installation.
-Context means that subinstallations can only import data that is also imported by the parent or exported by other subinstallations with the same parent.
+Installation Templates are used to include nested installations in a blueprint.
+Such installations are specified by templates that will be mapped to concrete
+new installations in the context of the actual blueprint execution. They have a
+context that is finnaly defined by the parent installation using the actual blueprint.
+Context means that nested installations can only import data that is also imported
+by the parent or exported by other subinstallations with the same parent.
 
-Installation templates offer the same configuration as real installation 
-except that blueprints have to be defined in the component descriptor of the blueprint (either as resource or by a component reference).
+Installation templates offer the same configuration as real installations
+except that the used blueprints have to be defined in the component descriptor
+of the blueprint (either as resource or by a component reference).
 Inline blueprints are also possible.
 
-Subinstallations can also be defined in a separate file or templated via executor (templated executors are defined in a separate field `.subinstallationExecutions`).
-If defined by file it is expected that that file contains one InstallationTemplate.
+Nested installations can be defined in two flavors;
 
-All possible options to define a subinstallation can be used in parallel and are summed up.
+- [Static Installations](#static-installations)
+- [Templated Installations](#templated-installations)
 
+In any case the result is a list of installation specifications.
+Every specification is mapped to a dedicated nested installation object
+in the context of the actual installation the blueprint is instantiated for.
+
+All possible options to define a nested installation can be used in parallel and are summed up.
+The name of all described nested installations must be unique in the context of
+the blueprint. But they don't need to be unique for landscaper namespace,
+because the live only in the context of installation the blueprint is
+instantiated for. If the blueprint is used for multiple installations (flat or
+nested, again), the generated installations and used data objects are living
+in separate naming scopes.
+
+The installation specification (although technically called `InstallationTemplate` it is not 
+templated by a template processor but used by the _Landscaper_ to generate a final _Installation_ object)
+has the following format:
+
+The installation specification is basiaclly a plain installation with some limitations:
+- Using [component descriptor imports](#component-descriptor-imports-in-nested-installations)
+
+Besides those limitations a specification will still be processed by the landscaper
+before putting it as regular installations into the landscaper data plane:
+- it handles the scopes
+- it maps the usage of directly used parent imports
+- it maps the usage of the component descriptor of the top-level installation.
+
+**Example**
 ```yaml
-- apiVersion: landscaper.gardener.cloud/v1alpha1
+  apiVersion: landscaper.gardener.cloud/v1alpha1
   kind: InstallationTemplate
   name: my-subinstallation # must be unique
   blueprint:
@@ -529,13 +585,45 @@ All possible options to define a subinstallation can be used in parallel and are
   #exportMappings: {}
 ```
 
-Similar to how deploy items can be defined, it is also possible to create template subinstallations based on the imports.
-A Blueprint's subinstallations executions may contain any number of template executors.
-A template executor must return a list of installation templates.<br>
+### Static Installations
 
-For a list of available templating imports see the [deploy item executor docs](#executor-imports).
+Static installations are configured as a list under the top-level field
+`subinstallations` in the blueprint manifest.
 
-__Subinstallation Template__:
+Every entry can either be a reference to file (using the field `file`) provided
+in the blueprint's [filesystem](#blueprint) or directly inlined. Only one of
+both flavors can be used for one list entry.
+
+**Example**
+```yaml
+subinstallations:
+- file: installations/installation.yaml
+- apiVersion: landscaper.gardener.cloud/v1alpha1
+  kind: InstallationTemplate
+  name: mysubinst
+  imports:
+    targets:
+    - name: "also-my-foo-targets"
+      targetListRef: "my-foo-targets"
+```
+
+Static installations are not templated and cannot refer to import values.
+
+### Templated Installations
+
+Similar to how deploy items can be defined, it is also possible to create nested
+installations based on the imports by using template [executions](./Templating.md).
+templated installations are configured as a list under the top-level field
+`subinstallationExecutions` in the blueprint manifest.
+
+The template processing is fed with the standard binding and supports [state handling](./Templating#state-handling.
+
+A template execution must return a YAML document with at least the top-level
+node `subinstallations`. It is expected to contain a list of installation
+specifications.
+
+
+_**Example**:
 ```yaml
 subinstallationExecutions:
 - name: default
@@ -550,10 +638,11 @@ subinstallationExecutions:
       ...
 ```
 
+### Hints for using Nested Installations
 
-##### Targetlist Imports in Subinstallations
+#### Target List Imports in nested installations
 
-To import a targetlist that has been imported by a parent installation, use `targetListRef` to reference the name of the parent import.
+To import a targetlist that has been imported by an installation, use `targetListRef` to reference the name of the parent import.
 
 ```yaml
 imports:
@@ -573,12 +662,18 @@ subinstallations:
       targetListRef: "my-foo-targets"
 ```
 
+#### Component Descriptor Imports in Nested Installations
 
-##### Component Descriptor Imports in Subinstallations
-
-Only root installations can directly reference component descriptors in their imports. In subinstallations, it is only possible to reference a component descriptor which has already been imported by the parent. Therefore, only the fields `dataRef` and `list` are allowed in component descriptor imports in subinstallations.
-With `dataRef`, a single component descriptor or a list of component descriptors imported by the parent can be referenced.
-The `list` field can be used to build a new component descriptor list import, in the same way it is used in regular installations. The only difference is that all list entries can only use `dataRef` to reference a component descriptor.
+Only root installations can directly reference component descriptors in their
+imports. In nested installations, it is only possible to reference a component
+descriptor which has already been imported by the parent. Therefore, only the
+fields `dataRef` and `list` are allowed in component descriptor imports in nested
+installations.
+With `dataRef`, a single component descriptor or a list of component descriptors
+imported by the parent can be referenced.
+The `list` field can be used to build a new component descriptor list import, in
+the same way it is used in regular installations. The only difference is that all
+list entries can only use `dataRef` to reference a component descriptor.
 
 ```yaml
 imports:
