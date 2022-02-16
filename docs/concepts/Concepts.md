@@ -234,7 +234,7 @@ controlled by a central landscaper installation.
 
 ![Delivery](images/delivery.png)
 
-A typical scenario the _Landscaper is used, is maintaining a deployment
+A typical scenario the _Landscaper_ is used, is maintaining a deployment
 landscape managed and operated by development teams. Here the development
 activities provide the deployment artefacts in a local artefact repository
 which is used to feed a local landscaper installation by git-ops tooling.
@@ -314,7 +314,7 @@ in the deployers.
 
 ![Summary](images/overview.png)
 
-The _Landscaper operates on resources stored in a Kubernetes data plane.
+The _Landscaper_ operates on resources stored in a Kubernetes data plane.
 The central element is the _Installation_. This  element describes
 the installation of a dedicated instance of a deployable component.
 
@@ -341,6 +341,7 @@ to the Kubernetes controller pattern and are responsible to achieve the
 target state described by the _DeployItem_ in a dedicated target environment.
 
 ---
+
 _This setup so far, up to some degree, can be compared to a computer program,
 the _Blueprints_ are procedure definitions with formal parameters and the
 _Installations_ are procedure calls providing dedicated values for
@@ -353,6 +354,7 @@ And finally, the _Landscaper_ is the processor executing the program.
 The similarities reach their limits when considering the reconcilation feature
 that enables this program to restart at any point in-between, if something
 changes._
+
 ---
 
 Like _DeployItems_ target environment technologies are completely transparent

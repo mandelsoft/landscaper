@@ -112,7 +112,7 @@ exports:
   targetType: landscaper.gardener.cloud/kubernetes-cluster
 
 # deployExecutions are a templating mechanism to 
-# template the deploy items.
+# template the deployitems.
 # For detailed documentation see #DeployExecutions
 deployExecutions: 
 - name: execution-name
@@ -259,9 +259,9 @@ For detailed information about the jsonschema and landscaper specifics see [JSON
 
 ## Rendering
 
-The task of a _Blueprint_ is to provide deploy items and final output for
+The task of a _Blueprint_ is to provide deployitems and final output for
 the data flow among _Installations_ based of their input values provided
-by the actual _Instannation_ is evaluated for.
+by the actual _Installation_ is evaluated for.
 
 This is described by rule sets consisting of [templates](./Templating) carried together
 with the blueprint.
@@ -284,23 +284,22 @@ template processor.
 imports:
   <import-name>: <import value>
 cd: <component descriptor>
-components: <list of all referenced component descriptors>
 blueprintDef: <blueprint definition> # blueprint definition from the Installation
 componentDescriptorDef: <component descriptor definition> # component descriptor definition from the installation
 ```
 
 The rendering result must be a YAML map document.
 The rendered elements are typically expected under a dedicated certain top-level
-node (e.g. `deployItems` for a deploy item execution.
+node (e.g. `deployItems` for a deployitem execution.
 
-There serveral rendering contexts:
-- [`deployExecutions`](#deployitems) rendering of deploy items produced by the blueprint for the actual installation.
+There are serveral rendering contexts:
+- [`deployExecutions`](#deployitems) rendering of deployitems produced by the blueprint for the actual installation.
 - [`exportExecutions`](#export-values) rendering of values for the [export parameters](#export-definitions) of the blueprint.
-- [`subinstallationExecutions`](#nested-installations) rendering of installations to instantiated in the context of the actual blueprint execution.
+- [`subinstallationExecutions`](#nested-installations) rendering of installations to be instantiated in the context of the actual blueprint execution.
 
 ### DeployItems
 
-The main task of a _Blueprint_ is to provide _DeployItems_ Therefore the blueprint
+The main task of a _Blueprint_ is to provide _DeployItems_. Therefore the blueprint
 manifest uses a top-level field `deployExecutions` listing any number of appropriate
 template [executions](./Templating.md). 
 
@@ -312,10 +311,10 @@ deployExecutions:
     file: data/gotemplate.tmpl
 ```
 
-The template processing is fed with the standard binding and supports [state handling](./Templating#state-handling.
+The template processing is fed with the [standard binding](#rendering) and supports [state handling](./Templating.md#state-handling).
 
 A template execution must return a YAML document with at least the top-level
-node `deployItems`. It is expected to contain a list of deploy item specifications.
+node `deployItems`. It is expected to contain a list of deployitem specifications.
 These specification will then be mapped to final _DeployItems_ by the _Landscaper_.
 
 **Example rendered document**:
@@ -331,11 +330,11 @@ deployItems:
     ...
 ```
 
-All lists of deploy item specifications of all template executions are appended to one list as they are specified in the deployExecution.
+All lists of deployitem specifications of all template executions are appended to one list as they are specified in the deployExecution.
 
 **Example**:
 
-*Input values*:
+*Bindings*:
 ```yaml
 imports:
   replicas: 3
@@ -366,6 +365,7 @@ imports:
           name: component-2
           version: v1.0.1
           ...
+
 cd:
   meta:
     schemaVersion: v2
@@ -383,36 +383,28 @@ cd:
       acccess:
         type: ociRegistry
         imageReference: nginx:0.30.0
-components:
-- meta: # the resolved component referenced in "cd.component.componentReferences[0]"
-    schemaVersion: v2
-  component:
-    name: my-referenced-component
-    version: v1.0.0
-    resources:
-    - name: ubuntu
-      version: 0.18.0
-      relation: external
-      acccess:
-        type: ociRegistry
-        imageReference: ubuntu:0.18.0
-blueprint:
- ref:
-  #      repositoryContext:
-  #        type: ociRegistry
-  #        baseUrl: eu.gcr.io/myproj
-  componentName: github.com/gardener/gardener
-  version: v1.7.2
-  resourceName: gardener
-#    inline:
-#      filesystem: # vfs filesystem
-#        blueprint.yaml: 
-#          apiVersion: landscaper.gardener.cloud/v1alpha1
-#          kind: Blueprint
-#          ...
+
+blueprintDef:
+  ref:
+    resourceName: gardener
+  # inline:
+  #   filesystem: # vfs filesystem
+  #     blueprint.yaml: 
+  #       apiVersion: landscaper.gardener.cloud/v1alpha1
+  #       kind: Blueprint
+  #       ...
+
+componentDescriptorDef:
+  ref:
+    # repositoryContext:
+    #   type: ociRegistry
+    #   baseUrl: eu.gcr.io/myproj
+    componentName: github.com/gardener/gardener
+    version: v1.7.2
+
 ```
 
-*Rendered document*:
+*Deploy Execution*:
 ```yaml
 deployExecutions:
 - name: default
@@ -443,10 +435,43 @@ deployExecutions:
             {{- generateImageOverwrite .cd .imports.my-cdlist | toYaml | nindent 12 }}
 ```
 
+<!-- TODO
+*Rendered Result*:
+```yaml
+deployExecutions:
+- name: default
+  type: GoTemplate
+  template: |
+    deployItems:
+    - name: deploy
+      type: landscaper.gardener.cloud/helm
+      target:
+        name: {{ .imports.cluster.metadata.name }} # will resolve to "dev-cluster"
+        namespace: {{ .imports.cluster.metadata.namespace  }} # will resolve to "default"
+      config:
+        apiVersion: helm.deployer.landscaper.gardener.cloud/v1alpha1
+        kind: ProviderConfiguration
+        
+        chart:
+          {{ $resource := getResource .cd "name" "nginx-ingress-chart" }}
+          ref: {{ $resource.access.imageReference }} # resolves to nginx:0.30.0
+        
+        values:
+          replicas: {{ .imports.replicas  }} # will resolve to 3
+          
+          {{ $component := getComponent .cd "name" "my-referenced-component" }} # get a component that is referenced
+          {{ $resource := getResource $component "name" "ubuntu" }}
+          usesImage: {{ $resource.access.imageReference }} # resolves to ubuntu:0.18.0
+          
+          imageVectorOverwrite: |
+            {{- generateImageOverwrite .cd .imports.my-cdlist | toYaml | nindent 12 }}
+``` -->
+
+
 ### Export Values
 
 After a successful deployment of the generated _DeployItems_ the _Blueprint_ 
-may use the provided export information of the the deploy items to generate
+may use the provided export information of the the deployitems to generate
 values for its export parameters.
 
 Therefore the blueprint manifest uses a top-level field `exportExecutions` listing
@@ -464,12 +489,12 @@ exportExecutions:
            password: ...
 ```
 
-The template processing is fed with the standard binding and supports [state handling](./Templating#state-handling.
+The template processing is fed with the [standard binding](#rendering) and supports [state handling](./Templating#state-handling).
 Additional bindings are provided to access the exports of generated elements:
 
 - **`deployitems`** *map*
-  This map contains a map entry for all generated deploy items according to their configured name.
-  The entry then contains the configured deploy item exports
+  This map contains a map entry for all generated deployitems according to their configured name.
+  The entry then contains the configured deployitem exports.
 - **`dataobjects`** *map*
   This map contains the values of the nested data objects provided by nested installations.
 - **`targets`** *map*
@@ -509,17 +534,15 @@ exportExecutions:
 
 ## Nested Installations
 
-Installation Templates are used to include nested installations in a blueprint.
-Such installations are specified by templates that will be mapped to concrete
-new installations in the context of the actual blueprint execution. They have a
-context that is finnaly defined by the parent installation using the actual blueprint.
-Context means that nested installations can only import data that is also imported
-by the parent or exported by other subinstallations with the same parent.
+Blueprints may contain installation specifications which will result in installations when the blueprint is instantiated through an installation.
+They have a naming scope that is finally defined by the installation the blueprint is instantiated for.
+Naming scope means that nested installations can only import data that is also imported
+by the parent or exported by other nested installations with the same parent.
 
-Installation templates offer the same configuration as real installations
+Nested installation specifications offer the same configuration as real installations
 except that the used blueprints have to be defined in the component descriptor
 of the blueprint (either as resource or by a component reference).
-Inline blueprints are also possible.
+Inline blueprints are also possible, although not recommended for productive purposes.
 
 Nested installations can be defined in two flavors;
 
@@ -532,7 +555,7 @@ in the context of the actual installation the blueprint is instantiated for.
 
 All possible options to define a nested installation can be used in parallel and are summed up.
 The name of all described nested installations must be unique in the context of
-the blueprint. But they don't need to be unique for landscaper namespace,
+the blueprint. But they don't need to be unique in the landscaper namespace,
 because the live only in the context of installation the blueprint is
 instantiated for. If the blueprint is used for multiple installations (flat or
 nested, again), the generated installations and used data objects are living
@@ -542,7 +565,7 @@ The installation specification (although technically called `InstallationTemplat
 templated by a template processor but used by the _Landscaper_ to generate a final _Installation_ object)
 has the following format:
 
-The installation specification is basiaclly a plain installation with some limitations:
+The installation specification is basically a plain installation with some limitations:
 - Using [component descriptor imports](#component-descriptor-imports-in-nested-installations)
 
 Besides those limitations a specification will still be processed by the landscaper
@@ -611,12 +634,12 @@ Static installations are not templated and cannot refer to import values.
 
 ### Templated Installations
 
-Similar to how deploy items can be defined, it is also possible to create nested
+Similar to how deployitems can be defined, it is also possible to create nested
 installations based on the imports by using template [executions](./Templating.md).
-templated installations are configured as a list under the top-level field
+Templated installations are configured as a list under the top-level field
 `subinstallationExecutions` in the blueprint manifest.
 
-The template processing is fed with the standard binding and supports [state handling](./Templating#state-handling.
+The template processing is fed with the [standard binding](#rendering) and supports [state handling](./Templating#state-handling).
 
 A template execution must return a YAML document with at least the top-level
 node `subinstallations`. It is expected to contain a list of installation
@@ -640,7 +663,7 @@ subinstallationExecutions:
 
 ### Hints for using Nested Installations
 
-#### Target List Imports in nested installations
+#### TargetList Imports in nested installations
 
 To import a targetlist that has been imported by an installation, use `targetListRef` to reference the name of the parent import.
 
@@ -700,80 +723,4 @@ subinstallations:
       list:
       - dataRef: "my-single-cd"
       - dataRef: "my-other-single-cd"
-```
-
-
-## Remote Access
-
-Blueprints are referenced in installations or installation templates via the component descriptors access.
-
-Basically blueprints are a filesystem, therefore, any blob store could be supported.<br>
-Currently, local and OCI registry access is supported.
-
-:warning: Be aware that a local reigstry should be only used for testing and development, whereas the OCI registry is the preferred productive method.
-
-
-### Local
-
-A local registry can be defined in the landscaper configuration by providing the below configuration.
-The landscaper expects the given paths to be a directory that contains the definitions in subdirectory.
-The subdirectory should contain the file `description.yaml`, that contains the actual ComponentDefinition with its version and name.
-The whole subdirectory is used as the blob content of the Component.
-```yaml
-apiVersion: config.landscaper.gardener.cloud/v1alpha1
-kind: LandscaperConfiguration
-
-registry:
-  local:
-    paths:
-    - "/path/to/definitions"
-```
-
-The blueprints are referenced via `local` access type in the component descriptor.
-```
-component:
-  localResource:
-  - name: blueprint
-    type: blueprint
-    access:
-      type: local
-```
-
-### OCI
-
-ComponentDefinitions can be stored in a OCI compliant registry which is the preferred way to create and offer ComponentDefinitions.
-The Landscaper uses [OCI Artifacts](https://github.com/opencontainers/artifacts) which means that a OCI compliant registry has to be used.
-For more information about the [OCI distribution spec](https://github.com/opencontainers/distribution-spec/blob/master/spec.md) and OCI compliant registries refer to the official documents.
-
-The OCI manifest is stored in the below format in the registry.
-Whereas the config is ignored and there must be exactly one layer with the containing a bluprints filesystem as `application/tar+gzip`.
- 
- The layers can be identified via their title annotation or via their media type as only one component descriptor per layer is allowed.
-```json
-{
-   "schemaVersion": 2,
-   "annotations": {},
-   "config": {},
-   "layers": [
-      {
-         "digest": "sha256:6f4e69a5ff18d92e7315e3ee31c62165ebf25bfa05cad05c0d09d8f412dae401",
-         "mediaType": "application/tar+gzip",
-         "size": 78343,
-         "annotations": {
-            "org.opencontainers.image.title": "definition"
-         }
-      }
-   ]
-}
-```
-
-The blueprints are referenced via `ociRegistry` access type in the component descriptor.
-```
-component:
-  localResource:
-  - name: blueprint
-    type: blueprint
-    access:
-      type: ociRegistry
-      imgageReference: oci-ref:1.0.0
 ```
