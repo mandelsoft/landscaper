@@ -25,6 +25,9 @@ repositoryContext:
 
 registryPullSecrets: # additional pull secrets to access component descriptors and blueprints
 - name: my-pullsecret
+
+configurations:
+  config.mydeployer.mydomain.org: ... # custom configuration, not evaluated by landscaper
 ```
 
 ## Default Context

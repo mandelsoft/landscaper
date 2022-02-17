@@ -8,6 +8,7 @@ import (
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -38,4 +39,9 @@ type Context struct {
 	// Note that the type information is used to determine the secret key and the type of the secret.
 	// +optional
 	RegistryPullSecrets []corev1.LocalObjectReference `json:"registryPullSecrets,omitempty"`
+
+	// Configurations contains arbitrary configuration information for dedicated purposes given by a string key.
+	// The key should use a dns-like syntax to express the purpose and avoid conflicts.
+	// +optional
+	Configurations map[string]runtime.RawExtension `json:"configurations,omitempty"`
 }
