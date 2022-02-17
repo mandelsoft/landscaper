@@ -138,6 +138,29 @@ func (t *Templater) TemplateSubinstallationExecutions(tmplExec lsv1alpha1.Templa
 	return output, nil
 }
 
+// TemplateImportExecutions is the GoTemplate executor for an import execution.
+func (t *Templater) TemplateImportExecutions(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint,
+	descriptor *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList, values map[string]interface{}) (*lstmpl.ImportExecutorOutput, error) {
+	rawTemplate, err := getTemplateFromExecution(tmplExec, blueprint)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := context.Background()
+	defer ctx.Done()
+
+	data, err := t.TemplateExecution(rawTemplate, blueprint, descriptor, cdList, values)
+	if err != nil {
+		return nil, fmt.Errorf("unable to execute template: %w", err)
+	}
+
+	output := &lstmpl.ImportExecutorOutput{}
+	if err := yaml.Unmarshal(data, output); err != nil {
+		return nil, fmt.Errorf("error while decoding templated execution: %w", err)
+	}
+	return output, nil
+}
+
 // TemplateDeployExecutions is the GoTemplate executor for a deploy execution.
 func (t *Templater) TemplateDeployExecutions(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint,
 	descriptor *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList, values map[string]interface{}) (*lstmpl.DeployExecutorOutput, error) {

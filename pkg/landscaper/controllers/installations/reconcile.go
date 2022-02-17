@@ -167,6 +167,12 @@ func (c *Controller) Update(ctx context.Context, op *installations.Operation) er
 			currOp, "ImportsSatisfied", err.Error())
 	}
 
+	importExecution := imports.New(op)
+	if err := importExecution.Ensure(ctx, inst); err != nil {
+		return lserrors.NewWrappedError(err,
+			currOp, "ImportsSatisfied", err.Error())
+	}
+
 	currOp = "Reconcile"
 	// as all imports are satisfied we can collect and merge all imports
 	// and then start the executions

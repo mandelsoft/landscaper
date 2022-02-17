@@ -42,6 +42,12 @@ func New(templaters ...ExecutionTemplater) *Templater {
 type ExecutionTemplater interface {
 	// Type returns the type of the templater.
 	Type() lsv1alpha1.TemplateType
+	// TemplateImportExecutions templates an import executor and return a list of error messages.
+	TemplateImportExecutions(tmplExec lsv1alpha1.TemplateExecutor,
+		blueprint *blueprints.Blueprint,
+		cd *cdv2.ComponentDescriptor,
+		cdList *cdv2.ComponentDescriptorList,
+		values map[string]interface{}) (*ImportExecutorOutput, error)
 	// TemplateSubinstallationExecutions templates a subinstallation executor and return a list of installations templates.
 	TemplateSubinstallationExecutions(tmplExec lsv1alpha1.TemplateExecutor,
 		blueprint *blueprints.Blueprint,
@@ -96,6 +102,12 @@ func (o *SubinstallationExecutorOutput) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ImportExecutorOutput describes the output of import executor.
+type ImportExecutorOutput struct {
+	Bindings map[string]interface{} `json:"bindings"`
+	Errors   []string               `json:"errors"`
+}
+
 // DeployExecutorOutput describes the output of deploy executor.
 type DeployExecutorOutput struct {
 	DeployItems []lsv1alpha1.DeployItemTemplate `json:"deployItems"`
@@ -104,6 +116,48 @@ type DeployExecutorOutput struct {
 // ExportExecutorOutput describes the output of export executor.
 type ExportExecutorOutput struct {
 	Exports map[string]interface{} `json:"exports"`
+}
+
+func (o *Templater) TemplateImportExecutions(opts BlueprintExecutionOptions) ([]string, map[string]interface{}, error) {
+	values, err := opts.Values()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	errorList := []string{}
+	bindings := map[string]interface{}{}
+
+	for _, tmplExec := range opts.Blueprint.Info.ImportExecutions {
+		impl, ok := o.impl[tmplExec.Type]
+		if !ok {
+			return nil, nil, fmt.Errorf("unknown template type %s", tmplExec.Type)
+		}
+
+		output, err := impl.TemplateImportExecutions(tmplExec, opts.Blueprint, opts.ComponentDescriptor, opts.ComponentDescriptors, values)
+		if err != nil {
+			return nil, nil, err
+		}
+		if output.Bindings != nil {
+			var imports map[string]interface{}
+			imp := values["imports"]
+			if imports == nil {
+				imports = map[string]interface{}{}
+				values["imports"] = imports
+			} else {
+				imports = imp.(map[string]interface{})
+			}
+			for k, v := range output.Bindings {
+				bindings[k] = v
+				imports[k] = v
+			}
+		}
+		if len(output.Errors) != 0 {
+			errorList = append(errorList, output.Errors...)
+			break
+		}
+	}
+
+	return errorList, bindings, nil
 }
 
 // TemplateSubinstallationExecutions templates all subinstallation executions and
