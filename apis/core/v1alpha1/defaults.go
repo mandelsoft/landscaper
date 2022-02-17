@@ -51,7 +51,7 @@ func SetDefaults_DefinitionImport(imports *ImportDefinitionList) {
 			imp.Type = ImportTypeTarget
 		}
 		if imp.Type == ImportTypeTarget {
-			if len(imp.TargetType) != 0 && strings.Index(imp.TargetType, "/") < 0 {
+			if len(imp.TargetType) != 0 && !strings.Contains(imp.TargetType, "/") {
 				imp.TargetType = fmt.Sprintf("%s/%s", LandscaperDomain, imp.TargetType)
 			}
 		}
@@ -79,7 +79,7 @@ func SetDefaults_DefinitionExport(exports *ExportDefinitionList) {
 			exp.Type = ExportTypeTarget
 		}
 		if exp.Type == ExportTypeTarget {
-			if len(exp.TargetType) != 0 && strings.Index(exp.TargetType, "/") < 0 {
+			if len(exp.TargetType) != 0 && !strings.Contains(exp.TargetType, "/") {
 				exp.TargetType = fmt.Sprintf("%s/%s", LandscaperDomain, exp.TargetType)
 			}
 		}
