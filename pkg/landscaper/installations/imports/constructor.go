@@ -68,6 +68,9 @@ func (c *Constructor) Construct(ctx context.Context, inst *installations.Install
 		return err
 	}
 
+	c.SetTargetImports(importedTargets)
+	c.SetTargetListImports(importedTargetLists)
+
 	inst.SetImports(imports)
 	return nil
 }

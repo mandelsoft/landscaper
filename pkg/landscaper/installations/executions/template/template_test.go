@@ -24,6 +24,7 @@ import (
 	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/gotemplate"
 	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/spiff"
 
+	"github.com/gardener/landscaper/apis/core"
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
 )
@@ -127,7 +128,7 @@ func runTestSuite(testdataDir, sharedTestdataDir string) {
 			Expect(res).To(HaveLen(1))
 			Expect(res[0]).To(MatchFields(IgnoreExtras, Fields{
 				"Name": Equal("init"),
-				"Type": Equal(lsv1alpha1.DeployItemType("container")),
+				"Type": Equal(core.DeployItemType("container")),
 			}))
 		})
 

@@ -10,13 +10,11 @@ import (
 
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
-	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/gardener/landscaper/pkg/api"
 
 	"github.com/gardener/landscaper/apis/core"
-	"github.com/gardener/landscaper/apis/core/validation"
-
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
 	"github.com/gardener/landscaper/pkg/utils"
@@ -108,9 +106,43 @@ type ImportExecutorOutput struct {
 	Errors   []string               `json:"errors"`
 }
 
+type TargetReference struct {
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// +optional
+	Import string `json:"import,omitempty"`
+
+	// +optional
+	Index *int `json:"index,omitempty"`
+}
+
+// DeployItemSpecification defines a execution element that is translated into a deployitem template for the execution object.
+type DeployItemSpecification struct {
+	// Name is the unique name of the execution.
+	Name string `json:"name"`
+
+	// DataType is the DeployItem type of the execution.
+	Type core.DeployItemType `json:"type"`
+
+	// Target is the target reference to the target import of the target the deploy item should deploy to.
+	// +optional
+	Target *TargetReference `json:"target,omitempty"`
+
+	// Labels is the map of labels to be added to the deploy item.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// ProviderConfiguration contains the type specific configuration for the execution.
+	Configuration *runtime.RawExtension `json:"config"`
+
+	// DependsOn lists deploy items that need to be executed before this one
+	DependsOn []string `json:"dependsOn,omitempty"`
+}
+
 // DeployExecutorOutput describes the output of deploy executor.
 type DeployExecutorOutput struct {
-	DeployItems []lsv1alpha1.DeployItemTemplate `json:"deployItems"`
+	DeployItems []DeployItemSpecification `json:"deployItems"`
 }
 
 // ExportExecutorOutput describes the output of export executor.
@@ -188,14 +220,14 @@ func (o *Templater) TemplateSubinstallationExecutions(opts DeployExecutionOption
 }
 
 // TemplateDeployExecutions templates all deploy executions and returns a aggregated list of all templated deploy item templates.
-func (o *Templater) TemplateDeployExecutions(opts DeployExecutionOptions) ([]lsv1alpha1.DeployItemTemplate, error) {
+func (o *Templater) TemplateDeployExecutions(opts DeployExecutionOptions) ([]DeployItemSpecification, error) {
 
 	values, err := opts.Values()
 	if err != nil {
 		return nil, err
 	}
 
-	deployItemTemplateList := lsv1alpha1.DeployItemTemplateList{}
+	deployItemTemplateList := []DeployItemSpecification{}
 	for _, tmplExec := range opts.Blueprint.Info.DeployExecutions {
 		impl, ok := o.impl[tmplExec.Type]
 		if !ok {
@@ -212,19 +244,7 @@ func (o *Templater) TemplateDeployExecutions(opts DeployExecutionOptions) ([]lsv
 		deployItemTemplateList = append(deployItemTemplateList, output.DeployItems...)
 	}
 
-	if err := validateDeployItemList(field.NewPath("deployExecutions"), deployItemTemplateList); err != nil {
-		return nil, err
-	}
-
 	return deployItemTemplateList, nil
-}
-
-func validateDeployItemList(fldPath *field.Path, list lsv1alpha1.DeployItemTemplateList) error {
-	coreList := core.DeployItemTemplateList{}
-	if err := lsv1alpha1.Convert_v1alpha1_DeployItemTemplateList_To_core_DeployItemTemplateList(&list, &coreList, nil); err != nil {
-		return err
-	}
-	return validation.ValidateDeployItemTemplateList(fldPath, coreList).ToAggregate()
 }
 
 // TemplateExportExecutions templates all exports.

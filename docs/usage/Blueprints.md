@@ -393,7 +393,7 @@ top-level field `importExecutions`. It may list any number of appropriate
 template [executions](./Templating.md).  This can be used to enrich the set
 of import bindings for further template processing steps.
 
-The template processing is fed with the [standard binding](#rendering)
+The template processing is fed with the [standard binding](#rendering).
 
 A template execution should return a YAML document with two optional
 top-level nodes:
@@ -513,11 +513,29 @@ A deployitem specification has the following fields:
   the deployitem creator.
 
 
-- **`target`** *object reference*
+- **`target`** *target import reference*
 
-  This reference (`name` and optional `namespace`) denotes the target object
+  This reference denotes the target object
   describing the target environment the depoyitem should be deployed to,
   e.g. a dedicated kubernetes cluster.
+  It refers to a target import or targetlist import and has the following fields:
+
+
+  - **`import`** *string*
+
+  Name of the import importing the referenced target.
+
+
+  - **`index`** *int (optional)*
+
+  If the import refers to a targetlist import, `index` specifies the list index of the referenced target.
+
+
+  - **`name`** *string (deprecated)*
+
+  Name of the in-cluster target object. It must be taken from the `.metadata.name` field of the imported target
+  (e.g. `.imports.mytarget.metadata.name`).
+  Deprecated: reference an imported target via `import` instead.
 
 
 - **`labels`** *string map*
