@@ -41,6 +41,8 @@ The blueprint definition (blueprint.yaml) describes
     - [Import Values](#import-values)
     - [DeployItems](#deployitems)
     - [Export Values](#export-values)
+      - [Data Exports](#data-exports)
+      - [Target Exports](#target-exports)
     - [Templated Installations](#templated-installations)
   - [Nested Installations](#nested-installations)
     - [Static Installations](#static-installations)
@@ -192,7 +194,7 @@ The imports are described as a list of import declarations in the blueprint top-
 
 - **`name`** *string*
 
-  Identifier for the import parameter. Can be used in the templating to access the actual import value provided by the installation.
+  Identifier for the import _parameter_. Can be used in the templating to access the actual import value provided by the installation.
 
 
 - **`type`** *type*
@@ -284,7 +286,7 @@ top-level field `exports`. An export declaration has the following fields:
 
 - **`name`** *string*
 
-  Identifier for the export **parameter**. Can be used in the templating to access the actual export value provided by the installation.
+  Identifier for the export _parameter_. Can be used in the templating to access the actual export value provided by the installation.
 
 
 - **`type`** *type*
@@ -752,7 +754,7 @@ Additional bindings are provided to access the exports of generated elements:
 - **`targets`** *map*
 
   This map contains the values of the nested targets provided by all nested
-  provided by nested installations.
+  installations.
 
 
 - **`values`** *map* *(deprecated)*
@@ -789,6 +791,51 @@ exportExecutions:
         type: {{ .targets.dev-cluster.spec.type  }}
         config: {{ .targets.dev-cluster.spec.config  }}
 ```
+
+#### Data Exports
+
+The typical export is a data value. The structure for arbitrary data
+is completely free. The value is just taken as it is defined
+by the dedicated exports map entry.
+
+A data export of a blueprint can be exported by a using installation.
+The result will be a _DataObject_ of the name specified in the exporting
+installation in the parent scope of this installation.
+
+#### Target Exports
+
+It is possible to export targets, also. Hereby the target will be created
+in the scope of the installation the blueprint is instantiated for.
+To export a target the structure below the export name must match
+a target specification:
+
+- **`type`** *string*
+
+  The type of the target.
+
+
+- **`configuration`** *any*
+
+  The configuration of the target. The structure depends on the [type of
+  the target](../technical/target_types.md).
+
+
+- **`labels`** *string map*
+
+  This map is passed to the `labels` section of the generated target object.
+
+
+- **`annotations`** *string map*
+
+  This map is passed to the `annotations` section of the generated target object.
+
+
+The specification does not allow to provide a name for the target. It is
+created in the parent scope of the installation the blueprint is instantiated for, 
+if this export is exported by the installation, also.
+In this case the name in this scope is provided by the export definition of
+the installation.
+
 
 ## Nested Installations
 
