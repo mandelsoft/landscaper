@@ -86,7 +86,8 @@ func (o *ExecutionOperation) Ensure(ctx context.Context, inst *installations.Ins
 		var target *core.ObjectReference
 		if elem.Target != nil {
 			target = &core.ObjectReference{
-				Name: elem.Target.Name,
+				Name:      elem.Target.Name,
+				Namespace: o.Inst.Info.Namespace,
 			}
 			if elem.Target.Index != nil {
 				// targetlist import reference

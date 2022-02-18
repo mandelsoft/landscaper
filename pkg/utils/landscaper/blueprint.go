@@ -239,7 +239,8 @@ func RenderBlueprintDeployItems(
 	deployItemTemplates := make(core.DeployItemTemplateList, len(executions))
 	for i, elem := range executions {
 		target := &core.ObjectReference{
-			Name: elem.Target.Name,
+			Name:      elem.Target.Name,
+			Namespace: inst.Namespace,
 		}
 		if elem.Target.Index != nil {
 			// targetlist import reference
