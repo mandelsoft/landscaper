@@ -8,6 +8,7 @@ import (
 	"crypto/sha1"
 	"encoding/base32"
 	"fmt"
+	"regexp"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +35,9 @@ func GenerateDataObjectName(context string, name string) string {
 	if strings.HasPrefix(name, NonContextifiedPrefix) {
 		return strings.TrimPrefix(name, NonContextifiedPrefix)
 	}
-	if len(context) == 0 {
+	// for backward compatibility, we need to hash names which are incompatible with the k8s resource naming scheme
+	subdomainRegex := regexp.MustCompile("^([a-z0-9]|([a-z0-9][a-z0-9.-]*[a-z0-9]))$")
+	if len(context) == 0 && subdomainRegex.MatchString(name) {
 		return name
 	}
 	doName := fmt.Sprintf("%s/%s", context, name)
