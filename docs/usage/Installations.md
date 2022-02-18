@@ -186,12 +186,10 @@ is used. It supports the following fields:
   This optional field can be used to override the repository context
   specified by the actually used context. It uses the following fields:
 
-  - **`type`** *string*
-  
+  - **`type`** *string*<br/>
     The type of the repository. (typically the type `ociRegistry` is used here)
   
-  - **`baseURL`** *string*
-
+  - **`baseURL`** *string*<br/>
     Additional fields specify the access to the respository. They depend on the
     type of the repository. For an oci registry a `baseURL` must be specified.
 
@@ -375,7 +373,7 @@ by the creation context of an installation. Root installations
 are explicitly created _Installations_ in a namespace of the _Landscaper_
 data plane. They live in the root scope, their parent scope is the root scope.
 Every installation implicitly defines a new local scope for installations
-created by the referenced blueprint as [nested installations](./Blueprint.md#nested-installations).
+created by the referenced blueprint as [nested installations](./Blueprints.md#nested-installations).
 
 The objects an installation can use are always restricted to the scope the
 installation live in (its parent scope). This means that _DataObjects_ and
@@ -447,22 +445,22 @@ Imports define the data that should be used by the installation to satisfy the
 imports of the referenced blueprint.
 
 Using the spec field `imports` it is possible to import data for the installation
-from variou sources. This data must then be used to satisfy the imports
-of the referenced blueprint. By default there is a matching mechanism in place
+from various sources. This data must then be used to satisfy the imports
+of the referenced blueprint. By default, there is a matching mechanism in place
 that matches the imports of an installation directly with the imports of
 the blueprint by the used name.
 
-This default mapping required the imported data to directly match the data
+This default mapping requires the imported data to directly match the data
 structure requested by the imports of blueprint. Because this must not necessarily
-be the case under all circumtances it is possible to define an explicit mapping
+be the case under all circumstances it is possible to define an explicit mapping
 of data from tthe installation imports to the blueprint imports. This
 is done by [import data mappings](#import-data-mappings).
 
 For both purposes (the default mapping by name and the explicit data mapping),
-every installation imports feature a `name` attribute, that must be unique 
+every installation import features a `name` attribute, that must be unique 
 for all imports, regardless of their types.
 
-There are two basic types of imports for an installation:
+There are several types of imports for an installation:
 - **[Data imports](#data-imports)** which are used to satisfy blueprint imports defined by a schema.
    These kind of imports can also be mapped/transformed in the installation. 
 - **[Target imports](#target-imports)** must match and cannot be mapped/transformed by the installation.
@@ -494,16 +492,13 @@ They are defined by the following fields:
 
   The reference field supports the following fields:
 
-  - **`name`** *string*
-
+  - **`name`** *string*<br/>
     The name of the _Secret_.
   
-  - **`namespace`** *string (optional)*
-
+  - **`namespace`** *string (optional)*<br/>
     The namespace of the _Secret_
 
-  - **`key`** *string (optional)*
-
+  - **`key`** *string (optional)*<br/>
     The key of the secret field to use. If the key is not given, the complete
     field set of the secret is imported. The base64 encoding of the values is removed.
 
@@ -516,18 +511,15 @@ They are defined by the following fields:
 
   The reference field supports the following fields:
 
-  - **`name`** *string*
-
+  - **`name`** *string*<br/>
     The name of the _ConfigMap_
 
-  - **`namespace`** *string (optional)*
-
+  - **`namespace`** *string (optional)*<br/>
     The namespace of the _ConfigMap_.
 
-  - **`key`** *string (optional)*
-
-  The key of the configmap field to use. If the key is not given, the complete
-  field set of the configmap is imported.
+  - **`key`** *string (optional)*<br/>
+    The key of the configmap field to use. If the key is not given, the complete
+    field set of the configmap is imported.
 
   
 _DataObjects_ are the internal format of the landscaper for its data flow,
@@ -556,7 +548,7 @@ imports:
       key: "" # optional
 ```
 
-Imported data may be subject to [data import mappings](#data-import-mappings).
+Imported data may be subject to [data import mappings](#import-data-mappings).
 
 ### Target Imports
 
@@ -577,7 +569,7 @@ They are defined by the following fields:
 
 - **`targetList`** *string list (optional)*
 
-  This field can be used to specify a target list, that can match a [targetlist import](./Blueprint.md#import-definitions) 
+  This field can be used to specify a target list, that can match a [targetlist import](./Blueprints.md#import-definitions) 
   of a blueprint. The value is a list of the names of the _Target_ objects with the given
   name in the scope the installation is living in.
 
@@ -628,16 +620,13 @@ They are defined by the following fields:
 
   The reference field supports the following fields:
 
-    - **`name`** *string*
-
+    - **`name`** *string*<br/>
       The name of the _Secret_.
 
-    - **`namespace`** *string (optional)*
-
+    - **`namespace`** *string (optional)*<br/>
       The namespace of the _Secret_
 
-    - **`key`** *string*
-
+    - **`key`** *string*<br/>
       The key of the secret field to use. The base64 encoding of the values is removed.
 
 - **`configMapRef`** *struct*
@@ -649,17 +638,14 @@ They are defined by the following fields:
 
   The reference field supports the following fields:
 
-    - **`name`** *string*
-
+    - **`name`** *string*<br/>
       The name of the _ConfigMap_
 
-    - **`namespace`** *string (optional)*
-
+    - **`namespace`** *string (optional)*<br/>
       The namespace of the _ConfigMap_.
 
-    - **`key`** *string*
-
-  The key of the configmap field to use. 
+    - **`key`** *string*<br/>
+      The key of the configmap field to use. 
 
 - **`list`** *list of the ref variants described above*
 
@@ -750,6 +736,8 @@ These mappings open up the following possibilities:
 - use hard-coded values for blueprint imports
 - use only parts of the installation imports
 
+All values imported by an installation can be accessed in the templating by
+their import names.
 
 **Example**
 
@@ -799,26 +787,64 @@ spec:
 
 ## Exports
 
-Exports define the data that is created by the installation.
+Exports define the data that is created by the installation and exported
+for consumption by other installations in the same scope or by
+parent installations.
+
+By default there is a matching mechanism in place
+that matches the exports of an installation directly with the exports of
+the blueprint by the used name.
+
+This default mapping requires the exported data to directly match the data
+structure provided by the exports of blueprint. Because this must not necessarily
+be the case under all circumtances, it is possible to define an explicit mapping
+of data from the blueprint exports to the installation exports. This
+is done by [export data mappings](#export-data-mappings).
+This might be required, if the exported _DataObject_ is intended to be consumed
+ba another installation requiring a dedicated data structure not provided
+this way by the blueprint. Basically this export data mapping the 
+comparable with the [import data mapping](#import-data-mappings) on the
+consuming side. When establishing the flow between two installations
+under the same responsibility a required mapping can be done on either side.
+But this is not the case if the concerned installations are under different
+responsibilities, or if there are multiple providing and consuming installations.
+
+For both purposes (the default mapping by name and the explicit data mapping),
+every installation export features a `name` attribute, that must be unique
+for all exports, regardless of their types.
 
 There are two basic types of exports:
-
-1. Data exports that result in data objects.
-   These kind of exports can also be mapped/transformed in the installation.
-2. Target exports that result in targets.
+- [Data exports](#data-exports) that result in data objects.
+   These kind of exports can also be mapped/transformed in the installation. 
+- [Target exports](#target-exports) that result in targets.
    The target types much match and cannot be mapped/transformed by the installation.
    
+Exports are declared in the spec field `exports` as list within a type specific
+nested field.
+
 ### Data Exports
 
-Data exports are defined by a logical name and reference to the data.
+The export field `data` is used to declare a list of data exports.
+An export declaration uses the following fields:
 
-The logical name must be unique within all exports (data and targets).
+- **`name`** *string*
+
+  The name of the export used for the implicit or explicit mapping to the blueprint exports.
+
+
+- **`dataRef`** *string*
+
+  This field can be used to specify the name of a _DataObject_ in the parent [scope](#scopes) 
+  of an installation that should be created. For top-level installations the name
+  must comply to the Kubernetes rules for object names.
+
+Export to secrets or configmaps are not possible.
+
 If this name matches a blueprint export, the exported value is directly used.
 If an export has to be modified see [export data mapping](#export-data-mappings).
 
-Exported data will always result in contextified data objects.
-Export to secrets or configmaps are not possible.
 
+**Example**
 ```yaml
 exports:
   data:
@@ -842,11 +868,23 @@ data: <exported data>
 
 ### Target Exports
 
-Target exports are defined by a unique logical name and a reference to the actual target.
+The export field `targets` is used to declare a list of target exports.
+An export declaration uses the following fields:
 
-The logical name must be unique within all exports (data and targets) and must match the export name in the blueprint.<br>
-The `target` attribute defines the name of contextified target that is created within the same namespace.
+- **`name`** *string*
 
+  The name of the export used for the implicit or explicit mapping to the blueprint exports.
+
+
+- **`target`** *string*
+
+  This field can be used to specify the name of a _Target_ in the parent [scope](#scopes)
+  of an installation that should be created. For top-level installations the name
+  must comply to the Kubernetes rules for object names.
+
+The export of target lists is not possible.
+
+**Example**
 ```yaml
 exports:
   targets:
@@ -872,31 +910,32 @@ spec:
 
 ### Export Data Mappings
 
-It can happen that exported data is of a different format than what is needed in the context.<br>
-One possible solution is to add an additional blueprint that transforms the data.
-As this approach would result in a big overhead for just transforming some data, an additional method is needed to transform that data.
+It can happen that data exported by a blueprint is of a different format than
+what is needed in the scope.  One possible solution is to add an additional
+blueprint that transforms the data. As this approach would result in a big
+overhead for just transforming some data, an additional method is needed to
+transform that data.
 
-This transformation can be done in `spec.exportDataMappings`.
-`ExportDataMappings` define a map of all exports of a installation that can be templated using [spiff](https://github.com/mandelsoft/spiff). <br>
-These mappings make it possible to 
+This transformation can be done in with _Export Data Mappings_. They are
+specified in the spec field `exportDataMappings`.
+
+
+They define a map of exports of an installation that can be templated using
+[spiff](https://github.com/mandelsoft/spiff). The mapping might provide values
+for a subset of the installations exports. Unmapped exports are expected to
+be satisfied directly by the blueprint imports.
+
+These mappings open up the following possibilities:
 - create more exports from one or multiple exports of a blueprint
 - combine multiple exports to one
 - export hard coded values
 
-All exported values can be accessed in the templating by their logical internal names.
-All blueprint export data mappings are optional, by default the logical internal name is matched to the blueprint export.
-```yaml
-spec:
-  exports:
-    data:
-    - name: imp1
-    - name: imp2
-  exportDataMappings:
-    imp1: hardcoded value
-    imp2: (( exp1.subkey ))
-```
+All values exported by a blueprint can be accessed in the templating by their export names.
 
-__Example__
+
+**Example**
+
+*Blueprint specification:*
 ```yaml
 apiVersion: landscaper.gardener.cloud/v1alpha1
 kind: Blueprint
@@ -923,6 +962,7 @@ exports:
         type: string
 ```
 
+*Installation snippet:*
 ```yaml
 spec:
   exports:
@@ -944,10 +984,12 @@ The behavior of an installation is set by using operation annotations.
 These annotations are set automatically by the landscaper as part of the default reconciliation loop.
 An operator can also set annotations manually to enforce a specific behavior.
 
-`landscaper.gardener.cloud/operation`:
+- **`landscaper.gardener.cloud/operation`**:
+
   - `reconcile`: start a default reconcile on the installation
   - `force-reconcile`: skip the reconcile/pending check and directly start a new reconcilition flow. 
-    - :warning: Imports still have to be satisfied.
+    > **Warning:** Imports still have to be satisfied.
   - `abort`: abort the current run which will abort all subinstallation but will wait until all current running components have finished.
  
-`landscaper.gardener.cloud/skip=true`: skips the reconciliation of a component which means that it will not be triggered by configuration or import change.
+- **`landscaper.gardener.cloud/skip`**: 
+  - `true`: skips the reconciliation of a component which means that it will not be triggered by configuration or import change.
