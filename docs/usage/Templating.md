@@ -202,8 +202,27 @@ The execution type to use for spiff templates is `Spiff`. The template is provid
     deployItems:
     - name: my-first-deploy-item
       type: landscaper.gardener.cloud/mock
-      config: (( .imports.config ))
+      config: (( imports.config ))
 ```
+
+> **Note:** The bindings are accessible by path expressions without a leading dot (`.`).
+> The leading dot always refers to the root node of the document.
+> Because _spiff_ supports a relative path lookup up the node hierarchy
+> `imports.name` for accessing the import `name` in the following context
+> ```yaml
+> imports:
+>   name: localvalue
+> deployItems:
+> - name: test
+>    config: (( imports.name ))
+>```
+> would resolve to `localvalue` and *not* to the imported value.
+> Using `imports.other` would even fail, if such an import is defined,
+> because the next outer `imports` node does not contain a field `other`.
+> 
+> To access the bindings in such scenarios the path expression has to be
+> preceeded with `___.` (3x `_`). Bindings can always be accessed via
+> [`___.<bindings>`](https://github.com/mandelsoft/spiff#__).
 
 ##### Additional Functions
 
