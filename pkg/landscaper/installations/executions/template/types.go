@@ -99,7 +99,6 @@ type ExportExecutorOutput struct {
 	Exports map[string]interface{} `json:"exports"`
 }
 
-
 func serializeComponentDescriptor(cd *cdv2.ComponentDescriptor) (interface{}, error) {
 	if cd == nil {
 		return nil, nil

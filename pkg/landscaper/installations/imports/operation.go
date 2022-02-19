@@ -9,9 +9,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/gotemplate"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/spiff"
-
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	lsv1alpha1helper "github.com/gardener/landscaper/apis/core/v1alpha1/helper"
 	"github.com/gardener/landscaper/pkg/landscaper/installations"
@@ -43,7 +40,8 @@ func (o *ImportOperation) Ensure(ctx context.Context, inst *installations.Instal
 		KubeClient: o.Client(),
 		Inst:       inst.Info,
 	}
-	tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
+	//tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
+	tmpl := template.New(templateStateHandler, o.BlobResolver)
 	errors, bindings, err := tmpl.TemplateImportExecutions(
 		template.NewBlueprintExecutionOptions(
 			o.Context().External.InjectComponentDescriptorRef(inst.Info),

@@ -11,18 +11,17 @@ import (
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/ctf"
 	imagevector "github.com/gardener/image-vector/pkg"
+	"github.com/gardener/landscaper/pkg/landscaper/templating"
 	"github.com/mandelsoft/spiff/dynaml"
 	"github.com/mandelsoft/spiff/spiffing"
 	spiffyaml "github.com/mandelsoft/spiff/yaml"
 	"sigs.k8s.io/yaml"
-
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
 )
 
-func LandscaperSpiffFuncs(functions spiffing.Functions, cd *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList) {
-	functions.RegisterFunction("getResource", spiffResolveResources(cd))
-	functions.RegisterFunction("getComponent", spiffResolveComponent(cd, cdList))
-	functions.RegisterFunction("generateImageOverwrite", spiffGenerateImageOverwrite(cd, cdList))
+func LandscaperSpiffFuncs(functions spiffing.Functions, tctx *templating.TemplateContext) {
+	functions.RegisterFunction("getResource", spiffResolveResources(tctx.Cd))
+	functions.RegisterFunction("getComponent", spiffResolveComponent(tctx.Cd, tctx.CdList))
+	functions.RegisterFunction("generateImageOverwrite", spiffGenerateImageOverwrite(tctx.Cd, tctx.CdList))
 	functions.RegisterFunction("parseOCIRef", parseOCIReference)
 	functions.RegisterFunction("ociRefRepo", getOCIReferenceRepository)
 	functions.RegisterFunction("ociRefVersion", getOCIReferenceVersion)
@@ -40,7 +39,7 @@ func spiffResolveResources(cd *cdv2.ComponentDescriptor) func(arguments []interf
 			return info.Error(err.Error())
 		}
 
-		resources, err := template.ResolveResources(cd, val)
+		resources, err := templating.ResolveResources(cd, val)
 		if err != nil {
 			return info.Error(err.Error())
 		}
@@ -76,7 +75,7 @@ func spiffResolveComponent(cd *cdv2.ComponentDescriptor, cdList *cdv2.ComponentD
 			return info.Error(err.Error())
 		}
 
-		components, err := template.ResolveComponents(cd, cdList, val)
+		components, err := templating.ResolveComponents(cd, cdList, val)
 		if err != nil {
 			return info.Error(err.Error())
 		}
@@ -183,7 +182,7 @@ func parseOCIReference(arguments []interface{}, binding dynaml.Binding) (interfa
 	if !ok {
 		return info.Error("Invalid argument: string expected")
 	}
-	data, err := yaml.Marshal(template.ParseOCIReference(ref))
+	data, err := yaml.Marshal(templating.ParseOCIReference(ref))
 	if err != nil {
 		return info.Error(err.Error())
 	}
@@ -207,7 +206,7 @@ func getOCIReferenceRepository(arguments []interface{}, binding dynaml.Binding) 
 		return info.Error("Too many arguments for parseOCIReference. Expected 1 reference.")
 	}
 	ref := arguments[0].(string)
-	data, err := yaml.Marshal(template.ParseOCIReference(ref)[0])
+	data, err := yaml.Marshal(templating.ParseOCIReference(ref)[0])
 	if err != nil {
 		return info.Error(err.Error())
 	}
@@ -231,7 +230,7 @@ func getOCIReferenceVersion(arguments []interface{}, binding dynaml.Binding) (in
 		return info.Error("Too many arguments for parseOCIReference. Expected 1 reference.")
 	}
 	ref := arguments[0].(string)
-	data, err := yaml.Marshal(template.ParseOCIReference(ref)[1])
+	data, err := yaml.Marshal(templating.ParseOCIReference(ref)[1])
 	if err != nil {
 		return info.Error(err.Error())
 	}

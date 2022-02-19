@@ -14,9 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/gotemplate"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/spiff"
-
 	"github.com/gardener/landscaper/apis/core"
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	lsv1alpha1helper "github.com/gardener/landscaper/apis/core/v1alpha1/helper"
@@ -59,7 +56,8 @@ func (o *ExecutionOperation) RenderDeployItemTemplates(ctx context.Context, inst
 		KubeClient: o.Client(),
 		Inst:       inst.Info,
 	}
-	tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
+	//tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
+	tmpl := template.New(templateStateHandler, o.BlobResolver)
 	executions, err := tmpl.TemplateDeployExecutions(
 		template.NewDeployExecutionOptions(
 			template.NewBlueprintExecutionOptions(

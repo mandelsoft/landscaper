@@ -25,8 +25,6 @@ import (
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
 	"github.com/gardener/landscaper/pkg/landscaper/execution"
 	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/gotemplate"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/spiff"
 	"github.com/gardener/landscaper/pkg/landscaper/installations/subinstallations"
 	"github.com/gardener/landscaper/pkg/landscaper/jsonschema"
 	"github.com/gardener/landscaper/pkg/utils"
@@ -226,7 +224,8 @@ func RenderBlueprintDeployItems(
 	}
 
 	templateStateHandler := template.NewMemoryStateHandler()
-	executions, err := template.New(gotemplate.New(blobResolver, templateStateHandler), spiff.New(templateStateHandler)).
+	//executions, err := template.New(gotemplate.New(blobResolver, templateStateHandler), spiff.New(templateStateHandler)).
+	executions, err := template.New(templateStateHandler, blobResolver).
 		TemplateDeployExecutions(template.NewDeployExecutionOptions(template.NewBlueprintExecutionOptions(
 			inst, blueprint, cd, cdList,
 			imports.Imports)))
@@ -339,7 +338,8 @@ func RenderBlueprintSubInstallations(
 	}
 
 	templateStateHandler := template.NewMemoryStateHandler()
-	subInstallationTemplates, err := template.New(gotemplate.New(nil, templateStateHandler), spiff.New(templateStateHandler)).
+	//subInstallationTemplates, err := template.New(gotemplate.New(nil, templateStateHandler), spiff.New(templateStateHandler)).
+	subInstallationTemplates, err := template.New(templateStateHandler, nil).
 		TemplateSubinstallationExecutions(template.NewDeployExecutionOptions(
 			template.NewBlueprintExecutionOptions(inst, blueprint, cd, cdList,
 				imports.Imports)))

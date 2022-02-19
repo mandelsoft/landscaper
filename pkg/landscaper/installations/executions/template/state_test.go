@@ -55,6 +55,7 @@ var _ = Describe("State", func() {
 
 			data := []byte("my data")
 			Expect(stateHdlr.Store(ctx, "my-exec", data)).To(Succeed())
+			Expect(stateHdlr.Store(ctx, "my-exec", data)).To(Succeed())
 
 			res, err := stateHdlr.Get(ctx, "my-exec")
 			Expect(err).ToNot(HaveOccurred())

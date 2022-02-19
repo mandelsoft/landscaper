@@ -12,11 +12,8 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/gotemplate"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/spiff"
-
 	"github.com/gardener/landscaper/apis/core/validation"
+	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -250,7 +247,8 @@ func (o *Operation) getInstallationTemplates() ([]*lsv1alpha1.InstallationTempla
 			KubeClient: o.Client(),
 			Inst:       o.Inst.Info,
 		}
-		tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
+		//tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
+		tmpl := template.New(templateStateHandler, o.BlobResolver)
 		templatedTmpls, err := tmpl.TemplateSubinstallationExecutions(template.NewDeployExecutionOptions(
 			template.NewBlueprintExecutionOptions(
 				o.Context().External.InjectComponentDescriptorRef(o.Inst.Info.DeepCopy()),

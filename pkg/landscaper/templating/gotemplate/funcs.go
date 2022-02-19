@@ -18,10 +18,9 @@ import (
 	"github.com/gardener/component-spec/bindings-go/codec"
 	"github.com/gardener/component-spec/bindings-go/ctf"
 	imagevector "github.com/gardener/image-vector/pkg"
+	"github.com/gardener/landscaper/pkg/landscaper/templating"
 	"github.com/mandelsoft/vfs/pkg/vfs"
 	"sigs.k8s.io/yaml"
-
-	lstmpl "github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
 )
 
 // LandscaperSprigFuncMap returns the sanitized spring function map.
@@ -41,7 +40,7 @@ func LandscaperTplFuncMap(fs vfs.FileSystem, cd *cdv2.ComponentDescriptor, cdLis
 
 		"toYaml": toYAML,
 
-		"parseOCIRef":   lstmpl.ParseOCIReference,
+		"parseOCIRef":   templating.ParseOCIReference,
 		"ociRefRepo":    getOCIReferenceRepository,
 		"ociRefVersion": getOCIReferenceVersion,
 		"resolve":       resolveArtifactFunc(blobResolver),
@@ -95,12 +94,12 @@ func toYAML(v interface{}) string {
 
 // getOCIReferenceVersion returns the version of a oci reference
 func getOCIReferenceVersion(ref string) string {
-	return lstmpl.ParseOCIReference(ref)[1]
+	return templating.ParseOCIReference(ref)[1]
 }
 
 // getOCIReferenceRepository returns the repository of a oci reference
 func getOCIReferenceRepository(ref string) string {
-	return lstmpl.ParseOCIReference(ref)[0]
+	return templating.ParseOCIReference(ref)[0]
 }
 
 // resolveArtifactFunc returns a function that can resolve artifact defined by a component descriptor access
@@ -121,7 +120,7 @@ func getResourcesGoFunc(cd *cdv2.ComponentDescriptor) func(...interface{}) []map
 		if cd == nil {
 			panic("Unable to search for a resource as no ComponentDescriptor is defined.")
 		}
-		resources, err := lstmpl.ResolveResources(cd, args)
+		resources, err := templating.ResolveResources(cd, args)
 		if err != nil {
 			panic(err)
 		}
@@ -144,7 +143,7 @@ func getResourceGoFunc(cd *cdv2.ComponentDescriptor) func(args ...interface{}) m
 		if cd == nil {
 			panic("Unable to search for a resource as no ComponentDescriptor is defined.")
 		}
-		resources, err := lstmpl.ResolveResources(cd, args)
+		resources, err := templating.ResolveResources(cd, args)
 		if err != nil {
 			panic(err)
 		}
@@ -198,7 +197,7 @@ func getComponentGoFunc(cd *cdv2.ComponentDescriptor, list *cdv2.ComponentDescri
 		if cd == nil {
 			panic("Unable to search for a component as no ComponentDescriptor is defined.")
 		}
-		components, err := lstmpl.ResolveComponents(cd, list, args)
+		components, err := templating.ResolveComponents(cd, list, args)
 		if err != nil {
 			panic(err)
 		}
