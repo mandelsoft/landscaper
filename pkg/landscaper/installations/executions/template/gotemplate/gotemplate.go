@@ -148,10 +148,18 @@ func (t *Templater) TemplateImportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 
 	ctx := context.Background()
 	defer ctx.Done()
+	state, err := t.getImportExecutionState(ctx, tmplExec)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load state: %w", err)
+	}
 
+	values["state"] = state
 	data, err := t.TemplateExecution(rawTemplate, blueprint, descriptor, cdList, values)
 	if err != nil {
 		return nil, fmt.Errorf("unable to execute template: %w", err)
+	}
+	if err := t.storeImportExecutionState(ctx, tmplExec, data); err != nil {
+		return nil, fmt.Errorf("unable to store state: %w", err)
 	}
 
 	output := &lstmpl.ImportExecutorOutput{}
@@ -218,6 +226,14 @@ func (t *Templater) TemplateExportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 		return nil, err
 	}
 	return output, nil
+}
+
+func (t *Templater) getImportExecutionState(ctx context.Context, tmplExec lsv1alpha1.TemplateExecutor) (interface{}, error) {
+	return t.getState(ctx, "import", tmplExec)
+}
+
+func (t *Templater) storeImportExecutionState(ctx context.Context, tmplExec lsv1alpha1.TemplateExecutor, data []byte) error {
+	return t.storeState(ctx, "import", tmplExec, data)
 }
 
 func (t *Templater) getDeployExecutionState(ctx context.Context, tmplExec lsv1alpha1.TemplateExecutor) (interface{}, error) {

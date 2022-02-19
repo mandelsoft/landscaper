@@ -87,6 +87,10 @@ func (t *Templater) TemplateImportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 	}
 	ctx := context.Background()
 	defer ctx.Done()
+	stateNode, err := t.getImportExecutionState(ctx, tmplExec)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load state: %w", err)
+	}
 
 	functions := spiffing.NewFunctions()
 	LandscaperSpiffFuncs(functions, descriptor, cdList)
@@ -96,8 +100,11 @@ func (t *Templater) TemplateImportExecutions(tmplExec lsv1alpha1.TemplateExecuto
 		return nil, fmt.Errorf("unable to init spiff templater: %w", err)
 	}
 
-	res, err := spiff.Cascade(rawTemplate, nil)
+	res, err := spiff.Cascade(rawTemplate, nil, stateNode)
 	if err != nil {
+		return nil, err
+	}
+	if err := t.storeImportExecutionState(ctx, tmplExec, spiff, res); err != nil {
 		return nil, err
 	}
 
@@ -202,6 +209,14 @@ func (t *Templater) templateNode(tmplExec lsv1alpha1.TemplateExecutor, blueprint
 		return spiffyaml.Unmarshal("template", rawTemplateBytes)
 	}
 	return nil, fmt.Errorf("no template found")
+}
+
+func (t *Templater) getImportExecutionState(ctx context.Context, tmplExec lsv1alpha1.TemplateExecutor) (spiffyaml.Node, error) {
+	return t.getState(ctx, "import", tmplExec)
+}
+
+func (t *Templater) storeImportExecutionState(ctx context.Context, tmplExec lsv1alpha1.TemplateExecutor, spiff spiffing.Spiff, res spiffyaml.Node) error {
+	return t.storeState(ctx, "import", tmplExec, spiff, res)
 }
 
 func (t *Templater) getDeployExecutionState(ctx context.Context, tmplExec lsv1alpha1.TemplateExecutor) (spiffyaml.Node, error) {

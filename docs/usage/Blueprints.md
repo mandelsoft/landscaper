@@ -395,7 +395,7 @@ top-level field `importExecutions`. It may list any number of appropriate
 template [executions](./Templating.md).  This can be used to enrich the set
 of import bindings for further template processing steps.
 
-The template processing is fed with the [standard binding](#rendering).
+The template processing is fed with the [standard binding](#rendering) and supports [state handling](./Templating.md#state-handling).
 
 A template execution should return a YAML document with two optional
 top-level nodes:
