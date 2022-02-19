@@ -363,6 +363,29 @@ spec:
               context:
                 description: Context defines the current context of the installation.
                 type: string
+              exportDataExecutions:
+                description: ExportDataExecutions describe a generic template based
+                  data mapping of export data values
+                items:
+                  description: MappingTemplateExecutor describes a templating mechanism
+                    and configuration.
+                  properties:
+                    name:
+                      description: Name is the unique name of the template
+                      type: string
+                    template:
+                      description: Template contains an optional inline template.
+                        The template has to be of string for go template and a valid
+                        yaml/json for spiff.
+                      x-kubernetes-preserve-unknown-fields: true
+                    type:
+                      description: Type describes the templating mechanism.
+                      type: string
+                  required:
+                  - name
+                  - type
+                  type: object
+                type: array
               exportDataMappings:
                 additionalProperties:
                   description: AnyJSON enhances the json.RawMessages with a dedicated
@@ -412,6 +435,29 @@ spec:
                       type: object
                     type: array
                 type: object
+              importDataExecutions:
+                description: ImportDataExecutions describe a generic template based
+                  data mapping of import data values
+                items:
+                  description: MappingTemplateExecutor describes a templating mechanism
+                    and configuration.
+                  properties:
+                    name:
+                      description: Name is the unique name of the template
+                      type: string
+                    template:
+                      description: Template contains an optional inline template.
+                        The template has to be of string for go template and a valid
+                        yaml/json for spiff.
+                      x-kubernetes-preserve-unknown-fields: true
+                    type:
+                      description: Type describes the templating mechanism.
+                      type: string
+                  required:
+                  - name
+                  - type
+                  type: object
+                type: array
               importDataMappings:
                 additionalProperties:
                   description: AnyJSON enhances the json.RawMessages with a dedicated

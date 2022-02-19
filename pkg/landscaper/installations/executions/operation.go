@@ -14,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	template2 "github.com/gardener/landscaper/pkg/landscaper/installations/template"
+
 	"github.com/gardener/landscaper/apis/core"
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	lsv1alpha1helper "github.com/gardener/landscaper/apis/core/v1alpha1/helper"
@@ -21,7 +23,6 @@ import (
 	kutil "github.com/gardener/landscaper/controller-utils/pkg/kubernetes"
 	"github.com/gardener/landscaper/pkg/api"
 	"github.com/gardener/landscaper/pkg/landscaper/installations"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
 )
 
 const (
@@ -52,15 +53,15 @@ func New(op *installations.Operation) *ExecutionOperation {
 func (o *ExecutionOperation) RenderDeployItemTemplates(ctx context.Context, inst *installations.Installation) (core.DeployItemTemplateList, error) {
 	cond := lsv1alpha1helper.GetOrInitCondition(inst.Info.Status.Conditions, lsv1alpha1.ReconcileExecutionCondition)
 
-	templateStateHandler := template.KubernetesStateHandler{
+	templateStateHandler := template2.KubernetesStateHandler{
 		KubeClient: o.Client(),
 		Inst:       inst.Info,
 	}
 	//tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
-	tmpl := template.New(templateStateHandler, o.BlobResolver)
+	tmpl := template2.New(templateStateHandler, o.BlobResolver)
 	executions, err := tmpl.TemplateDeployExecutions(
-		template.NewDeployExecutionOptions(
-			template.NewBlueprintExecutionOptions(
+		template2.NewDeployExecutionOptions(
+			template2.NewBlueprintExecutionOptions(
 				o.Context().External.InjectComponentDescriptorRef(inst.Info),
 				inst.Blueprint,
 				o.ComponentDescriptor,

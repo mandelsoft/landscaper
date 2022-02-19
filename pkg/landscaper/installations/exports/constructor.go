@@ -9,11 +9,16 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
+	"github.com/gardener/landscaper/pkg/landscaper/installations/imports"
+	"github.com/gardener/landscaper/pkg/landscaper/templating"
+	"github.com/mandelsoft/spiff/spiffing"
+	spiffyaml "github.com/mandelsoft/spiff/yaml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	lstmpl "github.com/gardener/landscaper/pkg/landscaper/installations/template"
 
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	lsv1alpha1helper "github.com/gardener/landscaper/apis/core/v1alpha1/helper"
@@ -66,13 +71,13 @@ func (c *Constructor) Construct(ctx context.Context) ([]*dataobjects.DataObject,
 	}
 	internalExports["targets"] = targetsMap
 
-	stateHdlr := template.KubernetesStateHandler{
+	stateHdlr := lstmpl.KubernetesStateHandler{
 		KubeClient: c.Client(),
 		Inst:       c.Inst.Info,
 	}
 	//exports, err := template.New(gotemplate.New(c.BlobResolver, stateHdlr), spiff.New(stateHdlr)).
-	exports, err := template.New(stateHdlr, c.BlobResolver).
-		TemplateExportExecutions(template.NewExportExecutionOptions(template.NewBlueprintExecutionOptions(
+	exports, err := lstmpl.New(stateHdlr, c.BlobResolver).
+		TemplateExportExecutions(lstmpl.NewExportExecutionOptions(lstmpl.NewBlueprintExecutionOptions(
 			c.Inst.GetInfo(), c.Inst.Blueprint, c.ComponentDescriptor, c.ResolvedComponentDescriptorList, c.Inst.GetImports()),
 			internalExports))
 	if err != nil {
@@ -112,13 +117,22 @@ func (c *Constructor) Construct(ctx context.Context) ([]*dataobjects.DataObject,
 		}
 	}
 
+	templatedDataMappings, err := c.templateExports(fldPath, exports)
+	if err != nil {
+		return nil, nil, err
+	}
 	// Resolve export mapping for all internalExports
 	dataObjects := make([]*dataobjects.DataObject, len(c.Inst.Info.Spec.Exports.Data))
 	dataExportsPath := fldPath.Child("exports").Child("data")
 	for i, dataExport := range c.Inst.Info.Spec.Exports.Data {
 		dataExportPath := dataExportsPath.Child(dataExport.Name)
-		data, ok := exports[dataExport.Name]
-		if !ok {
+		var data interface{}
+		if val, ok := templatedDataMappings[dataExport.Name]; ok {
+			data = val
+		} else if val, ok := exports[dataExport.Name]; ok {
+			data = val
+		}
+		if data == nil {
 			return nil, nil, fmt.Errorf("%s: data export is not defined", dataExportPath.String())
 		}
 		do := dataobjects.New().
@@ -146,6 +160,69 @@ func (c *Constructor) Construct(ctx context.Context) ([]*dataobjects.DataObject,
 	}
 
 	return dataObjects, targets, nil
+}
+
+func (c *Constructor) templateExports(fldPath *field.Path, exports map[string]interface{}) (map[string]interface{}, error) {
+	templater := lstmpl.NewBasic(nil) // TODO: find appropriate blob resolver
+
+	templateValues := map[string]interface{}{}
+	for k, v := range exports {
+		templateValues[k] = v
+	}
+	tctx := &templating.TemplateContext{
+		Blueprint: nil,
+		Cd:        nil,
+		CdList:    nil,
+		Values: map[string]interface{}{
+			"exports": templateValues,
+		},
+	}
+
+	values := make(map[string]interface{})
+	for _, tmplExec := range c.Inst.Info.Spec.ExportDataExecutions {
+		output := imports.DataMappingOutput{}
+		_, err := templater.Execute("export mapping", tmplExec.Type, tmplExec.Name, tmplExec.Template.RawMessage, nil, tctx, &output)
+		if err != nil {
+			return nil, err
+		}
+
+		if output.Mapping != nil {
+			for k, v := range output.Mapping {
+				templateValues[k] = v
+				values[k] = v
+			}
+		}
+	}
+
+	// execute data mappings
+	spiff, err := spiffing.New().WithFunctions(spiffing.NewFunctions()).WithValues(templateValues)
+	if err != nil {
+		return nil, fmt.Errorf("unable to init spiff templater: %w", err)
+	}
+	for key, dataMapping := range c.Inst.Info.Spec.ExportDataMappings {
+		impPath := fldPath.Child(key)
+
+		tmpl, err := spiffyaml.Unmarshal(key, dataMapping.RawMessage)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse export mapping template %s: %w", impPath.String(), err)
+		}
+
+		res, err := spiff.Cascade(tmpl, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to template export mapping template %s: %w", impPath.String(), err)
+		}
+
+		dataBytes, err := spiffyaml.Marshal(res)
+		if err != nil {
+			return nil, fmt.Errorf("unable to marshal templated import mapping %s: %w", impPath.String(), err)
+		}
+		var data interface{}
+		if err := yaml.Unmarshal(dataBytes, &data); err != nil {
+			return nil, fmt.Errorf("unable to unmarshal templated import mapping %s: %w", impPath.String(), err)
+		}
+		values[key] = data
+	}
+	return values, nil
 }
 
 func (c *Constructor) aggregateDataObjectsInContext(ctx context.Context) (map[string]interface{}, error) {

@@ -1053,6 +1053,21 @@ Example: namespace: (( installation.imports.namespace ))</p>
 </tr>
 <tr>
 <td>
+<code>importDataExecutions</code></br>
+<em>
+<a href="#landscaper.gardener.cloud/v1alpha1.MappingTemplateExecutor">
+[]MappingTemplateExecutor
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ImportDataExecutions describe a generic template based data mapping of
+import data values</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>exports</code></br>
 <em>
 <a href="#landscaper.gardener.cloud/v1alpha1.InstallationExports">
@@ -1080,6 +1095,21 @@ map[string]github.com/gardener/landscaper/apis/core/v1alpha1.AnyJSON
 It is expected to contain a key for every blueprint-defined data export.
 Missing keys will be defaulted to their respective data export.
 Example: namespace: (( blueprint.exports.namespace ))</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>exportDataExecutions</code></br>
+<em>
+<a href="#landscaper.gardener.cloud/v1alpha1.MappingTemplateExecutor">
+[]MappingTemplateExecutor
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ExportDataExecutions describe a generic template based data mapping of
+export data values</p>
 </td>
 </tr>
 </table>
@@ -1327,6 +1357,7 @@ AnyJSON
 <a href="#landscaper.gardener.cloud/v1alpha1.InlineBlueprint">InlineBlueprint</a>, 
 <a href="#landscaper.gardener.cloud/v1alpha1.InstallationSpec">InstallationSpec</a>, 
 <a href="#landscaper.gardener.cloud/v1alpha1.InstallationTemplateBlueprintDefinition">InstallationTemplateBlueprintDefinition</a>, 
+<a href="#landscaper.gardener.cloud/v1alpha1.MappingTemplateExecutor">MappingTemplateExecutor</a>, 
 <a href="#landscaper.gardener.cloud/v1alpha1.StaticDataSource">StaticDataSource</a>, 
 <a href="#landscaper.gardener.cloud/v1alpha1.TargetSpec">TargetSpec</a>, 
 <a href="#landscaper.gardener.cloud/v1alpha1.TemplateExecutor">TemplateExecutor</a>)
@@ -3922,6 +3953,21 @@ Example: namespace: (( installation.imports.namespace ))</p>
 </tr>
 <tr>
 <td>
+<code>importDataExecutions</code></br>
+<em>
+<a href="#landscaper.gardener.cloud/v1alpha1.MappingTemplateExecutor">
+[]MappingTemplateExecutor
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ImportDataExecutions describe a generic template based data mapping of
+import data values</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>exports</code></br>
 <em>
 <a href="#landscaper.gardener.cloud/v1alpha1.InstallationExports">
@@ -3949,6 +3995,21 @@ map[string]github.com/gardener/landscaper/apis/core/v1alpha1.AnyJSON
 It is expected to contain a key for every blueprint-defined data export.
 Missing keys will be defaulted to their respective data export.
 Example: namespace: (( blueprint.exports.namespace ))</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>exportDataExecutions</code></br>
+<em>
+<a href="#landscaper.gardener.cloud/v1alpha1.MappingTemplateExecutor">
+[]MappingTemplateExecutor
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ExportDataExecutions describe a generic template based data mapping of
+export data values</p>
 </td>
 </tr>
 </tbody>
@@ -4181,6 +4242,64 @@ ValueRef
 </td>
 <td>
 <p>Kubeconfig defines kubeconfig as string.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="landscaper.gardener.cloud/v1alpha1.MappingTemplateExecutor">MappingTemplateExecutor
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#landscaper.gardener.cloud/v1alpha1.InstallationSpec">InstallationSpec</a>)
+</p>
+<p>
+<p>MappingTemplateExecutor describes a templating mechanism and configuration.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>name</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Name is the unique name of the template</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>type</code></br>
+<em>
+<a href="#landscaper.gardener.cloud/v1alpha1.TemplateType">
+TemplateType
+</a>
+</em>
+</td>
+<td>
+<p>Type describes the templating mechanism.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>template</code></br>
+<em>
+<a href="#landscaper.gardener.cloud/v1alpha1.AnyJSON">
+AnyJSON
+</a>
+</em>
+</td>
+<td>
+<p>Template contains an optional inline template.
+The template has to be of string for go template
+and a valid yaml/json for spiff.</p>
 </td>
 </tr>
 </tbody>
@@ -5140,6 +5259,7 @@ and a valid yaml/json for spiff.</p>
 (<code>string</code> alias)</p></h3>
 <p>
 (<em>Appears on:</em>
+<a href="#landscaper.gardener.cloud/v1alpha1.MappingTemplateExecutor">MappingTemplateExecutor</a>, 
 <a href="#landscaper.gardener.cloud/v1alpha1.TemplateExecutor">TemplateExecutor</a>)
 </p>
 <p>

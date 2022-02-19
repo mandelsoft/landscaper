@@ -12,11 +12,12 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/gardener/landscaper/apis/core/validation"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
+	template2 "github.com/gardener/landscaper/pkg/landscaper/installations/template"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/gardener/landscaper/apis/core/validation"
 
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	lsv1alpha1helper "github.com/gardener/landscaper/apis/core/v1alpha1/helper"
@@ -243,14 +244,14 @@ func (o *Operation) cleanupOrphanedSubInstallations(ctx context.Context,
 func (o *Operation) getInstallationTemplates() ([]*lsv1alpha1.InstallationTemplate, error) {
 	var instTmpls []*lsv1alpha1.InstallationTemplate
 	if len(o.Inst.Blueprint.Info.SubinstallationExecutions) != 0 {
-		templateStateHandler := template.KubernetesStateHandler{
+		templateStateHandler := template2.KubernetesStateHandler{
 			KubeClient: o.Client(),
 			Inst:       o.Inst.Info,
 		}
 		//tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
-		tmpl := template.New(templateStateHandler, o.BlobResolver)
-		templatedTmpls, err := tmpl.TemplateSubinstallationExecutions(template.NewDeployExecutionOptions(
-			template.NewBlueprintExecutionOptions(
+		tmpl := template2.New(templateStateHandler, o.BlobResolver)
+		templatedTmpls, err := tmpl.TemplateSubinstallationExecutions(template2.NewDeployExecutionOptions(
+			template2.NewBlueprintExecutionOptions(
 				o.Context().External.InjectComponentDescriptorRef(o.Inst.Info.DeepCopy()),
 				o.Inst.Blueprint,
 				o.ComponentDescriptor,

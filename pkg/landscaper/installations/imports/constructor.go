@@ -13,6 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/yaml"
 
+	"github.com/gardener/landscaper/pkg/landscaper/installations/template"
+	"github.com/gardener/landscaper/pkg/landscaper/templating"
+
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/landscaper/dataobjects"
 	"github.com/gardener/landscaper/pkg/landscaper/dataobjects/jsonpath"
@@ -211,6 +214,10 @@ func (c *Constructor) constructImports(
 	return imports, nil
 }
 
+type DataMappingOutput struct {
+	Mapping map[string]interface{} `json:"mapping"`
+}
+
 func (c *Constructor) templateDataMappings(
 	fldPath *field.Path,
 	importedDataObjects map[string]*dataobjects.DataObject,
@@ -244,12 +251,38 @@ func (c *Constructor) templateDataMappings(
 			return nil, fmt.Errorf("unable to get target data for import %s", name)
 		}
 	}
+
+	templater := template.NewBasic(nil) // TODO: find appropriate blob resolver
+
+	tctx := &templating.TemplateContext{
+		Blueprint: nil,
+		Cd:        nil,
+		CdList:    nil,
+		Values: map[string]interface{}{
+			"imports": templateValues,
+		},
+	}
+
+	values := make(map[string]interface{})
+	for _, tmplExec := range c.Inst.Info.Spec.ImportDataExecutions {
+		output := DataMappingOutput{}
+		_, err := templater.Execute("import mapping", tmplExec.Type, tmplExec.Name, tmplExec.Template.RawMessage, nil, tctx, &output)
+		if err != nil {
+			return nil, err
+		}
+
+		if output.Mapping != nil {
+			for k, v := range output.Mapping {
+				templateValues[k] = v
+				values[k] = v
+			}
+		}
+	}
+
 	spiff, err := spiffing.New().WithFunctions(spiffing.NewFunctions()).WithValues(templateValues)
 	if err != nil {
 		return nil, fmt.Errorf("unable to init spiff templater: %w", err)
 	}
-
-	values := make(map[string]interface{})
 	for key, dataMapping := range c.Inst.Info.Spec.ImportDataMappings {
 		impPath := fldPath.Child(key)
 

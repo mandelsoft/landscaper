@@ -157,6 +157,58 @@ var _ = Describe("Constructor", func() {
 		Expect(inInstRoot.GetImports()).To(Equal(expectedConfig))
 	})
 
+	It("should execute import data executions", func() {
+		ctx := context.Background()
+		inInstRoot, err := installations.CreateInternalInstallation(ctx, op.ComponentsRegistry(), fakeInstallations["test12/root"])
+		Expect(err).ToNot(HaveOccurred())
+		op.Inst = inInstRoot
+		Expect(op.ResolveComponentDescriptors(ctx)).To(Succeed())
+
+		expectedConfig := map[string]interface{}{
+			"mine": "testdatavalue",
+		}
+
+		Expect(op.SetInstallationContext(ctx)).To(Succeed())
+		c := imports.NewConstructor(op)
+		Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+		Expect(inInstRoot.GetImports()).ToNot(BeNil())
+		Expect(inInstRoot.GetImports()).To(Equal(expectedConfig))
+	})
+
+	Context("import data executions", func() {
+		It("should execute import data executions", func() {
+			ctx := context.Background()
+			inInstRoot, err := installations.CreateInternalInstallation(ctx, op.ComponentsRegistry(), fakeInstallations["test12/root"])
+			Expect(err).ToNot(HaveOccurred())
+			op.Inst = inInstRoot
+			Expect(op.ResolveComponentDescriptors(ctx)).To(Succeed())
+
+			expectedConfig := map[string]interface{}{
+				"mine": "testdatavalue",
+			}
+
+			Expect(op.SetInstallationContext(ctx)).To(Succeed())
+			c := imports.NewConstructor(op)
+			Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+			Expect(inInstRoot.GetImports()).ToNot(BeNil())
+			Expect(inInstRoot.GetImports()).To(Equal(expectedConfig))
+		})
+
+		It("should report import data executions error", func() {
+			ctx := context.Background()
+			inInstRoot, err := installations.CreateInternalInstallation(ctx, op.ComponentsRegistry(), fakeInstallations["test12/error"])
+			Expect(err).ToNot(HaveOccurred())
+			op.Inst = inInstRoot
+			Expect(op.ResolveComponentDescriptors(ctx)).To(Succeed())
+
+			Expect(op.SetInstallationContext(ctx)).To(Succeed())
+			c := imports.NewConstructor(op)
+			err = c.Construct(ctx, inInstRoot)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("*'testdatavalue' not found"))
+		})
+	})
+
 	Context("schema validation", func() {
 		It("should forbid when the import of a component does not satisfy the schema", func() {
 			ctx := context.Background()

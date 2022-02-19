@@ -22,11 +22,11 @@ _Secrets_found in the scope of the _Installation_.
     - [Data Imports](#data-imports)
     - [Target Imports](#target-imports)
     - [Component Descriptor Imports](#component-descriptor-imports)
-    - [Import Data Mappings](#import-data-mappings)
+    - [Import Data Transformations](#import-data-transformations)
   - [Exports](#exports)
     - [Data Exports](#data-exports)
     - [Target Exports](#target-exports)
-    - [Export Data Mappings](#export-data-mappings)
+    - [Export Data Transformations](#export-data-transformations)
   - [Operations](#operations)
 
 ## Basic Structure
@@ -454,7 +454,7 @@ This default mapping requires the imported data to directly match the data
 structure requested by the imports of blueprint. Because this must not necessarily
 be the case under all circumstances it is possible to define an explicit mapping
 of data from tthe installation imports to the blueprint imports. This
-is done by [import data mappings](#import-data-mappings).
+is done by [import data transformations](#import-data-transformations).
 
 For both purposes (the default mapping by name and the explicit data mapping),
 every installation import features a `name` attribute, that must be unique 
@@ -714,7 +714,7 @@ descriptor which is currently being imported by one or more installations is the
 strongly discouraged and could lead to undesired behaviour of the respective installation(s).
 
 
-### Import Data Mappings
+### Import Data Transformation
 
 It can happen that imported data is of a different format than the expected schema
 defined in the blueprint. One possible solution is to add an additional blueprint
@@ -723,8 +723,75 @@ As this approach would result in a big overhead for just transforming some data.
 It should be possible to easily transform imported data to satisfy the required
 structure of imports of blueprints.
 
-This transformation can be done in with _Import Data Mappings_. They are
-specified in the spec field `importDataMappings`.
+This transformation can be done in two ways:
+- [Import Data Executions](#import-data-executions)
+- [Import Data Mappings](#import-data-mappings)
+
+### Import Data Executions
+
+_Import Data Executions_ are specified in the spec field `importDataExecutions`.
+This may contain a list of template [executions](./Templating.md). Those 
+executions do not support the `file` options to configure a template.
+
+The executions get one binding `imports` with the imports of the installation.
+
+A template execution must return a YAML document with at least the top-level
+map node `mapping`. It contains mappings for blueprint imports.
+It is possible to set additional non-blueprint-import keys that are available
+in the bindings for latter execution. Mappings are only possible for data imports.
+
+**Example**
+
+*Blueprint specification:*
+```yaml
+apiVersion: landscaper.gardener.cloud/v1alpha1
+kind: Blueprint
+imports:
+- name: providers
+  type: data
+  schema:
+    type: array
+    items:
+      type: string
+- name: identifier
+  type: data
+  schema:
+    type: string
+- name: aws-credentials
+  type: data
+  schema:
+    type: object
+    properties:
+      accessKeyID:
+        type: string
+      accessKeySecret:
+        type: string
+```
+
+*Installation snippet:*
+```yaml
+spec:
+  imports:
+    data:
+    - name: aws-provider #  value: { "type": "aws", "creds": { "accessKeyID": "adfa", "accessKeySec": "1234" } } }
+    - name: gcp-provider-type #  value: "gcp"
+  importDataExecutions:
+    - name: spiff
+      type: Spiff
+      template:
+        mapping:
+          identifier: my-controller
+          providers:
+            - (( imports.aws-provider-type.type ))
+            - (( imports.gcp-provider-type ))
+          aws-credentials: 
+          accessKeyID: (( imports.aws-provider-type.creds.accessKeyID ))
+          accessKeySecret: (( imports.aws-provider-type.creds.accessKeySec ))
+```
+
+### Import Data Mappings
+
+_Import Data Mappings_ are specified in the spec field `importDataMappings`.
 
 They define a map of imports of a blueprint that can be templated using
 [spiff](https://github.com/mandelsoft/spiff). The mapping might provide values
@@ -799,11 +866,11 @@ This default mapping requires the exported data to directly match the data
 structure provided by the exports of blueprint. Because this must not necessarily
 be the case under all circumtances, it is possible to define an explicit mapping
 of data from the blueprint exports to the installation exports. This
-is done by [export data mappings](#export-data-mappings).
+is done by [export data transformations](#export-data-transformations).
 This might be required, if the exported _DataObject_ is intended to be consumed
 ba another installation requiring a dedicated data structure not provided
 this way by the blueprint. Basically this export data mapping the 
-comparable with the [import data mapping](#import-data-mappings) on the
+comparable with the [import data transformations](#import-data-transformations) on the
 consuming side. When establishing the flow between two installations
 under the same responsibility a required mapping can be done on either side.
 But this is not the case if the concerned installations are under different
@@ -841,7 +908,7 @@ An export declaration uses the following fields:
 Export to secrets or configmaps are not possible.
 
 If this name matches a blueprint export, the exported value is directly used.
-If an export has to be modified see [export data mapping](#export-data-mappings).
+If an export has to be modified see [export data transformations](#export-data-transformations).
 
 
 **Example**
@@ -908,7 +975,7 @@ spec:
   config: <exported target data>
 ```
 
-### Export Data Mappings
+### Export Data Transformations
 
 It can happen that data exported by a blueprint is of a different format than
 what is needed in the scope.  One possible solution is to add an additional
@@ -916,22 +983,88 @@ blueprint that transforms the data. As this approach would result in a big
 overhead for just transforming some data, an additional method is needed to
 transform that data.
 
-This transformation can be done in with _Export Data Mappings_. They are
-specified in the spec field `exportDataMappings`.
-
-
-They define a map of exports of an installation that can be templated using
-[spiff](https://github.com/mandelsoft/spiff). The mapping might provide values
-for a subset of the installations exports. Unmapped exports are expected to
-be satisfied directly by the blueprint imports.
+This transformation can be done in two ways:
+- [Export Data Executions](#export-data-executions)
+- [Export Data Mappings](#export-data-mappings)
 
 These mappings open up the following possibilities:
 - create more exports from one or multiple exports of a blueprint
 - combine multiple exports to one
 - export hard coded values
 
-All values exported by a blueprint can be accessed in the templating by their export names.
+### Export Data Executions
 
+_Export Data Executions_ are specified in the spec field `exportDataExecutions`.
+This may contain a list of template [executions](./Templating.md). Those
+executions do not support the `file` options to configure a template.
+
+The executions get one binding `exports` with the exports of the blueprint.
+
+A template execution must return a YAML document with at least the top-level
+map node `mapping`. It contains mappings for installation exports.
+It is possible to set additional non-installation-export keys that are available
+in the bindings for latter executions. Mappings are only possible for data exports.
+
+**Example**
+
+*Blueprint specification:*
+```yaml
+apiVersion: landscaper.gardener.cloud/v1alpha1
+kind: Blueprint
+exports:
+- name: identifier
+  type: data
+  schema:
+    type: string
+- name: aws-credentials
+  type: data
+  schema:
+    type: object
+    properties:
+      accessKeyID:
+        type: string
+      accessKeySecret:
+        type: string
+- name: gcp-credentials
+  type: data
+  schema:
+    type: object
+    properties:
+      serviceaccount.yaml:
+        type: string
+```
+
+*Installation snippet:*
+```yaml
+spec:
+  exports:
+    data:
+    - name: identifier
+    - name: creds 
+  exportDataExecutions:
+    - name: spiff
+      type: Spiff
+      template:
+        mapping:
+          identifier: (( identifier ))
+          creds:
+          - type: aws
+            creds: (( aws-credentials ))
+          - type: gcp
+            creds: (( gcp-credentials ))
+```
+
+### Export Data Mappings
+
+This transformation can be done in with _Export Data Mappings_. They are
+specified in the spec field `exportDataMappings`.
+
+They define a map of exports of an installation that can be templated using
+[spiff](https://github.com/mandelsoft/spiff). The mapping might provide values
+for a subset of the installations exports. Unmapped exports are expected to
+be satisfied directly by the blueprint imports.
+
+All values exported by a blueprint can be accessed in the templating by their export names.
 
 **Example**
 

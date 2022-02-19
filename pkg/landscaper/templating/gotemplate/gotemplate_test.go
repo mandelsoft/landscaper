@@ -12,8 +12,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/gardener/landscaper/pkg/landscaper/templating/gotemplate"
+
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template/gotemplate"
 )
 
 func TestConfig(t *testing.T) {

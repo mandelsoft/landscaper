@@ -18,13 +18,14 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	template2 "github.com/gardener/landscaper/pkg/landscaper/installations/template"
+
 	"github.com/gardener/landscaper/apis/core"
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	kutil "github.com/gardener/landscaper/controller-utils/pkg/kubernetes"
 	"github.com/gardener/landscaper/pkg/api"
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
 	"github.com/gardener/landscaper/pkg/landscaper/execution"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
 	"github.com/gardener/landscaper/pkg/landscaper/installations/subinstallations"
 	"github.com/gardener/landscaper/pkg/landscaper/jsonschema"
 	"github.com/gardener/landscaper/pkg/utils"
@@ -223,10 +224,10 @@ func RenderBlueprintDeployItems(
 		}
 	}
 
-	templateStateHandler := template.NewMemoryStateHandler()
+	templateStateHandler := template2.NewMemoryStateHandler()
 	//executions, err := template.New(gotemplate.New(blobResolver, templateStateHandler), spiff.New(templateStateHandler)).
-	executions, err := template.New(templateStateHandler, blobResolver).
-		TemplateDeployExecutions(template.NewDeployExecutionOptions(template.NewBlueprintExecutionOptions(
+	executions, err := template2.New(templateStateHandler, blobResolver).
+		TemplateDeployExecutions(template2.NewDeployExecutionOptions(template2.NewBlueprintExecutionOptions(
 			inst, blueprint, cd, cdList,
 			imports.Imports)))
 	if err != nil {
@@ -337,11 +338,11 @@ func RenderBlueprintSubInstallations(
 		return nil, nil, fmt.Errorf("unable to get subinstallation of blueprint: %w", err)
 	}
 
-	templateStateHandler := template.NewMemoryStateHandler()
+	templateStateHandler := template2.NewMemoryStateHandler()
 	//subInstallationTemplates, err := template.New(gotemplate.New(nil, templateStateHandler), spiff.New(templateStateHandler)).
-	subInstallationTemplates, err := template.New(templateStateHandler, nil).
-		TemplateSubinstallationExecutions(template.NewDeployExecutionOptions(
-			template.NewBlueprintExecutionOptions(inst, blueprint, cd, cdList,
+	subInstallationTemplates, err := template2.New(templateStateHandler, nil).
+		TemplateSubinstallationExecutions(template2.NewDeployExecutionOptions(
+			template2.NewBlueprintExecutionOptions(inst, blueprint, cd, cdList,
 				imports.Imports)))
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to template subinstalltion executions: %w", err)

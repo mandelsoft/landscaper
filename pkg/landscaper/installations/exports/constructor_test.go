@@ -196,6 +196,37 @@ var _ = Describe("Constructor", func() {
 		}))
 	})
 
+	It("should construct the exported config from its execution by data mappings", func() {
+		ctx := context.Background()
+		inInstRoot, err := installations.CreateInternalInstallation(ctx, op.ComponentsRegistry(), fakeInstallations["test5/root"])
+		Expect(err).ToNot(HaveOccurred())
+		op.Inst = inInstRoot
+
+		c := exports.NewConstructor(op)
+		res, _, err := c.Construct(ctx)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).ToNot(BeNil())
+		Expect(res).To(HaveLen(2), "should export 2 data object for 2 exports")
+
+		id := func(element interface{}) string {
+			return element.(*dataobjects.DataObject).Metadata.Key
+		}
+		Expect(res).To(MatchAllElements(id, Elements{
+			"data.exec": PointTo(MatchFields(IgnoreExtras, Fields{
+				"Metadata": MatchFields(IgnoreExtras, Fields{
+					"SourceType": Equal(lsv1alpha1.ExportDataObjectSourceType),
+				}),
+				"Data": Equal("val-exec-y"),
+			})),
+			"data.map": PointTo(MatchFields(IgnoreExtras, Fields{
+				"Metadata": MatchFields(IgnoreExtras, Fields{
+					"SourceType": Equal(lsv1alpha1.ExportDataObjectSourceType),
+				}),
+				"Data": Equal("val-exec-z"),
+			})),
+		}))
+	})
+
 	Context("Target Export", func() {
 		It("should export a target from a template and a subinstallation", func() {
 			ctx := context.Background()

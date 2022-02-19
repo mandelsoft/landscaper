@@ -134,6 +134,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/gardener/landscaper/apis/core/v1alpha1.InstallationTemplateBlueprintDefinition":            schema_landscaper_apis_core_v1alpha1_InstallationTemplateBlueprintDefinition(ref),
 		"github.com/gardener/landscaper/apis/core/v1alpha1.JSONSchemaDefinition":                               schema_landscaper_apis_core_v1alpha1_JSONSchemaDefinition(ref),
 		"github.com/gardener/landscaper/apis/core/v1alpha1.KubernetesClusterTargetConfig":                      schema_landscaper_apis_core_v1alpha1_KubernetesClusterTargetConfig(ref),
+		"github.com/gardener/landscaper/apis/core/v1alpha1.MappingTemplateExecutor":                            schema_landscaper_apis_core_v1alpha1_MappingTemplateExecutor(ref),
 		"github.com/gardener/landscaper/apis/core/v1alpha1.NamedObjectReference":                               schema_landscaper_apis_core_v1alpha1_NamedObjectReference(ref),
 		"github.com/gardener/landscaper/apis/core/v1alpha1.ObjectReference":                                    schema_landscaper_apis_core_v1alpha1_ObjectReference(ref),
 		"github.com/gardener/landscaper/apis/core/v1alpha1.RemoteBlueprintReference":                           schema_landscaper_apis_core_v1alpha1_RemoteBlueprintReference(ref),
@@ -5416,6 +5417,20 @@ func schema_landscaper_apis_core_v1alpha1_InstallationSpec(ref common.ReferenceC
 							},
 						},
 					},
+					"importDataExecutions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ImportDataExecutions describe a generic template based data mapping of import data values",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/gardener/landscaper/apis/core/v1alpha1.MappingTemplateExecutor"),
+									},
+								},
+							},
+						},
+					},
 					"exports": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Exports define the exported data objects and targets.",
@@ -5438,12 +5453,26 @@ func schema_landscaper_apis_core_v1alpha1_InstallationSpec(ref common.ReferenceC
 							},
 						},
 					},
+					"exportDataExecutions": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ExportDataExecutions describe a generic template based data mapping of export data values",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/gardener/landscaper/apis/core/v1alpha1.MappingTemplateExecutor"),
+									},
+								},
+							},
+						},
+					},
 				},
 				Required: []string{"blueprint"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/gardener/landscaper/apis/core/v1alpha1.AnyJSON", "github.com/gardener/landscaper/apis/core/v1alpha1.BlueprintDefinition", "github.com/gardener/landscaper/apis/core/v1alpha1.ComponentDescriptorDefinition", "github.com/gardener/landscaper/apis/core/v1alpha1.InstallationExports", "github.com/gardener/landscaper/apis/core/v1alpha1.InstallationImports", "github.com/gardener/landscaper/apis/core/v1alpha1.ObjectReference"},
+			"github.com/gardener/landscaper/apis/core/v1alpha1.AnyJSON", "github.com/gardener/landscaper/apis/core/v1alpha1.BlueprintDefinition", "github.com/gardener/landscaper/apis/core/v1alpha1.ComponentDescriptorDefinition", "github.com/gardener/landscaper/apis/core/v1alpha1.InstallationExports", "github.com/gardener/landscaper/apis/core/v1alpha1.InstallationImports", "github.com/gardener/landscaper/apis/core/v1alpha1.MappingTemplateExecutor", "github.com/gardener/landscaper/apis/core/v1alpha1.ObjectReference"},
 	}
 }
 
@@ -5690,6 +5719,45 @@ func schema_landscaper_apis_core_v1alpha1_KubernetesClusterTargetConfig(ref comm
 		},
 		Dependencies: []string{
 			"github.com/gardener/landscaper/apis/core/v1alpha1.ValueRef"},
+	}
+}
+
+func schema_landscaper_apis_core_v1alpha1_MappingTemplateExecutor(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "MappingTemplateExecutor describes a templating mechanism and configuration.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the unique name of the template",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"type": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Type describes the templating mechanism.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"template": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Template contains an optional inline template. The template has to be of string for go template and a valid yaml/json for spiff.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/gardener/landscaper/apis/core/v1alpha1.AnyJSON"),
+						},
+					},
+				},
+				Required: []string{"name", "type"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/gardener/landscaper/apis/core/v1alpha1.AnyJSON"},
 	}
 }
 

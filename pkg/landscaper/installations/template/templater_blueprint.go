@@ -9,32 +9,26 @@ import (
 	"fmt"
 
 	"github.com/gardener/component-spec/bindings-go/ctf"
+	"github.com/mandelsoft/vfs/pkg/vfs"
+
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
 	"github.com/gardener/landscaper/pkg/landscaper/templating"
-	"github.com/gardener/landscaper/pkg/landscaper/templating/gotemplate"
-	"github.com/gardener/landscaper/pkg/landscaper/templating/spiff"
 	"github.com/gardener/landscaper/pkg/utils"
-	"github.com/mandelsoft/vfs/pkg/vfs"
 )
 
 // Templater implements all available template executors.
 type Templater struct {
-	impl  map[lsv1alpha1.TemplateType]templating.Templater
+	*BasicTemplater
 	state GenericStateHandler
 }
 
 // New creates a new instance of a templater.
 func New(state GenericStateHandler, resolver ctf.BlobResolver) *Templater {
-	templaters := []templating.Templater{gotemplate.New(resolver), spiff.New()}
-	t := &Templater{
-		impl:  make(map[lsv1alpha1.TemplateType]templating.Templater),
-		state: state,
+	return &Templater{
+		BasicTemplater: NewBasic(resolver),
+		state:          state,
 	}
-	for _, templater := range templaters {
-		t.impl[templater.Type()] = templater
-	}
-	return t
 }
 
 func (t *Templater) getState(ctx context.Context, prefix string, name string) ([]byte, error) {
@@ -64,12 +58,7 @@ func (t *Templater) storeState(ctx context.Context, prefix string, name string, 
 }
 
 func (t *Templater) execute(kind string, prefix string, tmplExec lsv1alpha1.TemplateExecutor, tctx *templating.TemplateContext, output interface{}) error {
-	impl, ok := t.impl[tmplExec.Type]
-	if !ok {
-		return fmt.Errorf("%s execution %q: unknown template type %q", kind, tmplExec.Name, tmplExec.Type)
-	}
-
-	template, err := getTemplateFromExecution(tmplExec, tctx.Blueprint)
+	template, err := GetTemplateFromBlueprint(tmplExec, tctx.Blueprint)
 	if err != nil {
 		return fmt.Errorf("deployitem execution %q: %s", tmplExec.Name, err)
 	}
@@ -81,7 +70,7 @@ func (t *Templater) execute(kind string, prefix string, tmplExec lsv1alpha1.Temp
 	if t.state != nil && prefix != "" {
 		state, err = t.getState(ctx, prefix, tmplExec.Name)
 	}
-	state, err = impl.Execute(tmplExec.Name, template, state, tctx, output)
+	state, err = t.Execute(kind, tmplExec.Type, tmplExec.Name, template, state, tctx, output)
 	if err != nil {
 		return err
 	}
@@ -221,7 +210,7 @@ func (o *Templater) TemplateExportExecutions(opts ExportExecutionOptions) (map[s
 	return exportData, nil
 }
 
-func getTemplateFromExecution(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint) ([]byte, error) {
+func GetTemplateFromBlueprint(tmplExec lsv1alpha1.TemplateExecutor, blueprint *blueprints.Blueprint) ([]byte, error) {
 	if len(tmplExec.Template.RawMessage) != 0 {
 		return tmplExec.Template.RawMessage, nil
 	}

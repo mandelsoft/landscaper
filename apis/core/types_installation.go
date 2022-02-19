@@ -69,6 +69,11 @@ type InstallationSpec struct {
 	// +optional
 	ImportDataMappings map[string]AnyJSON `json:"importDataMappings,omitempty"`
 
+	// ImportDataExecutions describe a generic template based data mapping of
+	// import data values
+	// +optional
+	ImportDataExecutions []MappingTemplateExecutor `json:"importDataExecutions,omitempty"`
+
 	// Exports define the exported data objects and targets.
 	// +optional
 	Exports InstallationExports `json:"exports,omitempty"`
@@ -79,6 +84,11 @@ type InstallationSpec struct {
 	// Example: namespace: (( blueprint.exports.namespace ))
 	// +optional
 	ExportDataMappings map[string]AnyJSON `json:"exportDataMappings,omitempty"`
+
+	// ExportDataExecutions describe a generic template based data mapping of
+	// export data values
+	// +optional
+	ExportDataExecutions []MappingTemplateExecutor `json:"exportDataExecutions,omitempty"`
 }
 
 // InstallationStatus contains the current status of a Installation.
@@ -108,6 +118,19 @@ type InstallationStatus struct {
 
 	// ExecutionReference is the reference to the execution that schedules the templated execution items.
 	ExecutionReference *ObjectReference `json:"executionRef,omitempty"`
+}
+
+// MappingTemplateExecutor describes a templating mechanism and configuration.
+type MappingTemplateExecutor struct {
+	// Name is the unique name of the template
+	Name string `json:"name"`
+	// Type describes the templating mechanism.
+	Type TemplateType `json:"type"`
+	// Template contains an optional inline template.
+	// The template has to be of string for go template
+	// and a valid yaml/json for spiff.
+	// + optional
+	Template AnyJSON `json:"template,omitempty"`
 }
 
 // InstallationImports defines import of data objects and targets.

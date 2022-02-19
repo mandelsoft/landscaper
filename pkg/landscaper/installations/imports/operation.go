@@ -12,7 +12,7 @@ import (
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	lsv1alpha1helper "github.com/gardener/landscaper/apis/core/v1alpha1/helper"
 	"github.com/gardener/landscaper/pkg/landscaper/installations"
-	"github.com/gardener/landscaper/pkg/landscaper/installations/executions/template"
+	template2 "github.com/gardener/landscaper/pkg/landscaper/installations/template"
 )
 
 const (
@@ -36,14 +36,14 @@ func New(op *installations.Operation) *ImportOperation {
 func (o *ImportOperation) Ensure(ctx context.Context, inst *installations.Installation) error {
 	cond := lsv1alpha1helper.GetOrInitCondition(inst.Info.Status.Conditions, lsv1alpha1.ValidateImportsCondition)
 
-	templateStateHandler := template.KubernetesStateHandler{
+	templateStateHandler := template2.KubernetesStateHandler{
 		KubeClient: o.Client(),
 		Inst:       inst.Info,
 	}
 	//tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
-	tmpl := template.New(templateStateHandler, o.BlobResolver)
+	tmpl := template2.New(templateStateHandler, o.BlobResolver)
 	errors, bindings, err := tmpl.TemplateImportExecutions(
-		template.NewBlueprintExecutionOptions(
+		template2.NewBlueprintExecutionOptions(
 			o.Context().External.InjectComponentDescriptorRef(inst.Info),
 			inst.Blueprint,
 			o.ComponentDescriptor,

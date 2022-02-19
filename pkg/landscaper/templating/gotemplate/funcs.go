@@ -18,9 +18,10 @@ import (
 	"github.com/gardener/component-spec/bindings-go/codec"
 	"github.com/gardener/component-spec/bindings-go/ctf"
 	imagevector "github.com/gardener/image-vector/pkg"
-	"github.com/gardener/landscaper/pkg/landscaper/templating"
 	"github.com/mandelsoft/vfs/pkg/vfs"
 	"sigs.k8s.io/yaml"
+
+	"github.com/gardener/landscaper/pkg/landscaper/templating"
 )
 
 // LandscaperSprigFuncMap returns the sanitized spring function map.
@@ -43,7 +44,6 @@ func LandscaperTplFuncMap(fs vfs.FileSystem, cd *cdv2.ComponentDescriptor, cdLis
 		"parseOCIRef":   templating.ParseOCIReference,
 		"ociRefRepo":    getOCIReferenceRepository,
 		"ociRefVersion": getOCIReferenceVersion,
-		"resolve":       resolveArtifactFunc(blobResolver),
 
 		"getResource":          getResourceGoFunc(cd),
 		"getResources":         getResourcesGoFunc(cd),
@@ -51,6 +51,10 @@ func LandscaperTplFuncMap(fs vfs.FileSystem, cd *cdv2.ComponentDescriptor, cdLis
 		"getRepositoryContext": getEffectiveRepositoryContextGoFunc,
 
 		"generateImageOverwrite": generateImageVectorGoFunc(cd, cdList),
+	}
+
+	if blobResolver != nil {
+		funcs["resolve"] = resolveArtifactFunc(blobResolver)
 	}
 	return funcs
 }

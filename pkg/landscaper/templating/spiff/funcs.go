@@ -11,11 +11,12 @@ import (
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/ctf"
 	imagevector "github.com/gardener/image-vector/pkg"
-	"github.com/gardener/landscaper/pkg/landscaper/templating"
 	"github.com/mandelsoft/spiff/dynaml"
 	"github.com/mandelsoft/spiff/spiffing"
 	spiffyaml "github.com/mandelsoft/spiff/yaml"
 	"sigs.k8s.io/yaml"
+
+	"github.com/gardener/landscaper/pkg/landscaper/templating"
 )
 
 func LandscaperSpiffFuncs(functions spiffing.Functions, tctx *templating.TemplateContext) {

@@ -8,10 +8,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gardener/landscaper/pkg/landscaper/templating"
 	"github.com/mandelsoft/spiff/spiffing"
 	spiffyaml "github.com/mandelsoft/spiff/yaml"
+	"github.com/mandelsoft/vfs/pkg/vfs"
 	"sigs.k8s.io/yaml"
+
+	"github.com/gardener/landscaper/pkg/landscaper/templating"
 
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 )
@@ -41,16 +43,17 @@ func (t *Templater) Execute(name string, templatedata, statedata []byte, tctx *t
 	ctx := context.Background()
 	defer ctx.Done()
 
-	var stateNode spiffyaml.Node
+	var stateNode []spiffyaml.Node
 
 	if statedata != nil {
 		if len(statedata) == 0 {
-			stateNode = spiffyaml.NewNode(map[string]interface{}{}, "state")
+			stateNode = []spiffing.Node{spiffyaml.NewNode(map[string]interface{}{}, "state")}
 		} else {
-			stateNode, err = spiffyaml.Unmarshal("state "+name, statedata)
+			node, err := spiffyaml.Unmarshal("state "+name, statedata)
 			if err != nil {
 				return nil, fmt.Errorf("unable to load state: %w", err)
 			}
+			stateNode = []spiffing.Node{node}
 		}
 	}
 
@@ -64,12 +67,21 @@ func (t *Templater) Execute(name string, templatedata, statedata []byte, tctx *t
 		binding[k] = v
 	}
 
-	spiff, err := spiffing.New().WithFunctions(functions).WithFileSystem(tctx.Blueprint.Fs).WithValues(binding)
+	var fs vfs.FileSystem
+	var mode = 0
+	if tctx.Blueprint != nil {
+		fs = tctx.Blueprint.Fs
+		if fs != nil {
+			mode = spiffing.MODE_FILE_ACCESS
+		}
+	}
+
+	spiff, err := spiffing.New().WithMode(mode).WithFunctions(functions).WithFileSystem(fs).WithValues(binding)
 	if err != nil {
 		return nil, fmt.Errorf("unable to init spiff templater: %w", err)
 	}
 
-	res, err := spiff.Cascade(rawTemplate, nil, stateNode)
+	res, err := spiff.Cascade(rawTemplate, nil, stateNode...)
 	if err != nil {
 		return nil, err
 	}

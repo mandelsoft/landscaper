@@ -10,10 +10,11 @@ import (
 
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/gardener/landscaper/apis/core"
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/api"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // SubinstallationExecutorOutput describes the output of deploy executor.

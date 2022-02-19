@@ -6,6 +6,7 @@ package templating
 
 import (
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
+
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
 )
