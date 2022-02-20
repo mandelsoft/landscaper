@@ -14,7 +14,6 @@ import (
 	lsv1alpha1helper "github.com/gardener/landscaper/apis/core/v1alpha1/helper"
 	kutil "github.com/gardener/landscaper/controller-utils/pkg/kubernetes"
 	"github.com/gardener/landscaper/pkg/landscaper/dataobjects"
-	"github.com/gardener/landscaper/pkg/landscaper/installations"
 )
 
 // CombinedPhase returns the phase of the referenced execution.
@@ -35,7 +34,8 @@ func CombinedPhase(ctx context.Context, kubeClient client.Client, inst *lsv1alph
 }
 
 // GetExportedValues returns the exported values of the execution
-func (o *ExecutionOperation) GetExportedValues(ctx context.Context, inst *installations.Installation) (*dataobjects.DataObject, error) {
+func (o *ExecutionOperation) GetExportedValues(ctx context.Context) (*dataobjects.DataObject, error) {
+	inst := o.Inst
 	exec := &lsv1alpha1.Execution{}
 	if err := o.Client().Get(ctx, kutil.ObjectKey(inst.Info.Name, inst.Info.Namespace), exec); err != nil {
 		if apierrors.IsNotFound(err) {

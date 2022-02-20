@@ -174,14 +174,14 @@ func (c *Controller) ConstructImports(ctx context.Context, op *installations.Ope
 	// as all imports are satisfied we can collect and merge all imports
 	// and then start the executions
 	constructor := imports.NewConstructor(op)
-	if err := constructor.Construct(ctx, inst); err != nil {
+	if err := constructor.Construct(ctx); err != nil {
 		return lserrors.NewWrappedError(err,
 			currOp, "ConstructImports", err.Error())
 	}
 
 	// execute import executions of blueprint
 	importExecution := imports.New(op)
-	if err := importExecution.Ensure(ctx, inst); err != nil {
+	if err := importExecution.Ensure(ctx); err != nil {
 		return lserrors.NewWrappedError(err,
 			currOp, "ConstructImports", err.Error())
 	}
@@ -223,7 +223,7 @@ func (c *Controller) Update(ctx context.Context, op *installations.Operation) er
 	}
 
 	exec := executions.New(op)
-	if err := exec.Ensure(ctx, inst); err != nil {
+	if err := exec.Ensure(ctx); err != nil {
 		return lserrors.NewWrappedError(err,
 			currOp, "ReconcileExecution", err.Error())
 	}

@@ -43,7 +43,7 @@ var _ = Describe("DeployItemExecutions", func() {
 		Expect(op.SetInstallationContext(ctx)).To(Succeed())
 
 		c := imports.NewConstructor(op)
-		Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+		Expect(c.Construct(ctx)).To(Succeed())
 		val := imports.NewTestValidator(op, inInstRoot)
 		Expect(val.ImportsSatisfied(ctx, inInstRoot)).To(Succeed())
 		return ctx, inInstRoot

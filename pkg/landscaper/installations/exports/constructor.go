@@ -52,7 +52,7 @@ func (c *Constructor) Construct(ctx context.Context) ([]*dataobjects.DataObject,
 		}
 	)
 
-	execDo, err := executions.New(c.Operation).GetExportedValues(ctx, c.Inst)
+	execDo, err := executions.New(c.Operation).GetExportedValues(ctx)
 	if err != nil {
 		return nil, nil, err
 	}

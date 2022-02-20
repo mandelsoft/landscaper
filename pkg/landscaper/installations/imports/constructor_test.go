@@ -77,7 +77,7 @@ var _ = Describe("Constructor", func() {
 
 		Expect(op.SetInstallationContext(ctx)).To(Succeed())
 		c := imports.NewConstructor(op)
-		Expect(c.Construct(ctx, inInstB)).To(Succeed())
+		Expect(c.Construct(ctx)).To(Succeed())
 		Expect(inInstB.GetImports()).ToNot(BeNil())
 		Expect(inInstB.GetImports()).To(Equal(expectedConfig))
 	})
@@ -96,7 +96,7 @@ var _ = Describe("Constructor", func() {
 
 		Expect(op.SetInstallationContext(ctx)).To(Succeed())
 		c := imports.NewConstructor(op)
-		Expect(c.Construct(ctx, inInstC)).To(Succeed())
+		Expect(c.Construct(ctx)).To(Succeed())
 		Expect(inInstC.GetImports()).ToNot(BeNil())
 
 		Expect(inInstC.GetImports()).To(Equal(expectedConfig))
@@ -115,7 +115,7 @@ var _ = Describe("Constructor", func() {
 
 		Expect(op.SetInstallationContext(ctx)).To(Succeed())
 		c := imports.NewConstructor(op)
-		Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+		Expect(c.Construct(ctx)).To(Succeed())
 		Expect(inInstRoot.GetImports()).ToNot(BeNil())
 
 		Expect(inInstRoot.GetImports()).To(Equal(expectedConfig))
@@ -134,7 +134,7 @@ var _ = Describe("Constructor", func() {
 
 		Expect(op.SetInstallationContext(ctx)).To(Succeed())
 		c := imports.NewConstructor(op)
-		Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+		Expect(c.Construct(ctx)).To(Succeed())
 		Expect(inInstRoot.GetImports()).ToNot(BeNil())
 		Expect(inInstRoot.GetImports()).To(Equal(expectedConfig))
 	})
@@ -152,7 +152,7 @@ var _ = Describe("Constructor", func() {
 
 		Expect(op.SetInstallationContext(ctx)).To(Succeed())
 		c := imports.NewConstructor(op)
-		Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+		Expect(c.Construct(ctx)).To(Succeed())
 		Expect(inInstRoot.GetImports()).ToNot(BeNil())
 		Expect(inInstRoot.GetImports()).To(Equal(expectedConfig))
 	})
@@ -170,7 +170,7 @@ var _ = Describe("Constructor", func() {
 
 		Expect(op.SetInstallationContext(ctx)).To(Succeed())
 		c := imports.NewConstructor(op)
-		Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+		Expect(c.Construct(ctx)).To(Succeed())
 		Expect(inInstRoot.GetImports()).ToNot(BeNil())
 		Expect(inInstRoot.GetImports()).To(Equal(expectedConfig))
 	})
@@ -189,7 +189,7 @@ var _ = Describe("Constructor", func() {
 
 			Expect(op.SetInstallationContext(ctx)).To(Succeed())
 			c := imports.NewConstructor(op)
-			Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+			Expect(c.Construct(ctx)).To(Succeed())
 			Expect(inInstRoot.GetImports()).ToNot(BeNil())
 			Expect(inInstRoot.GetImports()).To(Equal(expectedConfig))
 		})
@@ -203,7 +203,7 @@ var _ = Describe("Constructor", func() {
 
 			Expect(op.SetInstallationContext(ctx)).To(Succeed())
 			c := imports.NewConstructor(op)
-			err = c.Construct(ctx, inInstRoot)
+			err = c.Construct(ctx)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("*'testdatavalue' not found"))
 		})
@@ -230,7 +230,7 @@ var _ = Describe("Constructor", func() {
 			Expect(fakeClient.Update(ctx, do)).To(Succeed())
 
 			c := imports.NewConstructor(op)
-			err = c.Construct(ctx, inInstA)
+			err = c.Construct(ctx)
 			Expect(installations.IsSchemaValidationFailedError(err)).To(BeTrue())
 		})
 	})
@@ -245,7 +245,7 @@ var _ = Describe("Constructor", func() {
 			Expect(op.SetInstallationContext(ctx)).To(Succeed())
 
 			c := imports.NewConstructor(op)
-			Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+			Expect(c.Construct(ctx)).To(Succeed())
 			Expect(inInstRoot.GetImports()).ToNot(BeNil())
 
 			Expect(inInstRoot.GetImports()).To(HaveKeyWithValue("root.a", MatchKeys(IgnoreExtras, Keys{
@@ -265,7 +265,7 @@ var _ = Describe("Constructor", func() {
 			Expect(op.SetInstallationContext(ctx)).To(Succeed())
 
 			c := imports.NewConstructor(op)
-			Expect(c.Construct(ctx, inInstF)).To(Succeed())
+			Expect(c.Construct(ctx)).To(Succeed())
 			Expect(inInstF.GetImports()).ToNot(BeNil())
 
 			Expect(inInstF.GetImports()).To(HaveKeyWithValue("f.a", MatchKeys(IgnoreExtras, Keys{
@@ -288,7 +288,7 @@ var _ = Describe("Constructor", func() {
 			utils.ExpectNoError(op.SetInstallationContext(ctx))
 
 			c := imports.NewConstructor(op)
-			utils.ExpectNoError(c.Construct(ctx, inInstRoot))
+			utils.ExpectNoError(c.Construct(ctx))
 			Expect(inInstRoot.GetImports()).ToNot(BeNil())
 
 			Expect(inInstRoot.GetImports()).To(HaveKeyWithValue("root.a", ConsistOf(
@@ -324,7 +324,7 @@ var _ = Describe("Constructor", func() {
 			Expect(op.SetInstallationContext(ctx)).To(Succeed())
 
 			c := imports.NewConstructor(op)
-			Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+			Expect(c.Construct(ctx)).To(Succeed())
 			Expect(inInstRoot.GetImports()).ToNot(BeNil())
 
 			// check import from registry

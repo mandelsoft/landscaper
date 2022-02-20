@@ -33,7 +33,8 @@ func New(op *installations.Operation) *ImportOperation {
 	}
 }
 
-func (o *ImportOperation) Ensure(ctx context.Context, inst *installations.Installation) error {
+func (o *ImportOperation) Ensure(ctx context.Context) error {
+	inst:= o.Inst
 	cond := lsv1alpha1helper.GetOrInitCondition(inst.Info.Status.Conditions, lsv1alpha1.ValidateImportsCondition)
 
 	templateStateHandler := template2.KubernetesStateHandler{

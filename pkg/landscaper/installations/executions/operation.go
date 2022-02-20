@@ -134,7 +134,8 @@ func (o *ExecutionOperation) RenderDeployItemTemplates(ctx context.Context, inst
 	return execTemplates, nil
 }
 
-func (o *ExecutionOperation) Ensure(ctx context.Context, inst *installations.Installation) error {
+func (o *ExecutionOperation) Ensure(ctx context.Context) error {
+	inst:=o.Inst
 	execTemplates, err := o.RenderDeployItemTemplates(ctx, inst)
 	if execTemplates == nil || err != nil {
 		return err

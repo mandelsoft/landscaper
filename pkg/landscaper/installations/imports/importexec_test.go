@@ -41,7 +41,7 @@ var _ = Describe("ImportExecutions", func() {
 		Expect(op.SetInstallationContext(ctx)).To(Succeed())
 
 		c := imports.NewConstructor(op)
-		Expect(c.Construct(ctx, inInstRoot)).To(Succeed())
+		Expect(c.Construct(ctx)).To(Succeed())
 		val := imports.NewTestValidator(op, inInstRoot)
 		Expect(val.ImportsSatisfied(ctx, inInstRoot)).To(Succeed())
 		return ctx, inInstRoot
@@ -70,7 +70,7 @@ var _ = Describe("ImportExecutions", func() {
 	It("should extend imports by import executions", func() {
 		ctx, inst := Load("test11/root")
 		exec := imports.New(op)
-		err := exec.Ensure(ctx, inst)
+		err := exec.Ensure(ctx)
 		Expect(err).To(Succeed())
 		Expect(inst.Imports["processed"]).To(Equal("mytestvalue(extended)"))
 	})
@@ -78,23 +78,23 @@ var _ = Describe("ImportExecutions", func() {
 	It("should extend imports incrementally by import executions", func() {
 		ctx, inst := Load("test11/multi")
 		exec := imports.New(op)
-		err := exec.Ensure(ctx, inst)
+		err := exec.Ensure(ctx)
 		Expect(err).To(Succeed())
 		Expect(inst.Imports["processed"]).To(Equal("mytestvalue(extended)"))
 		Expect(inst.Imports["further"]).To(Equal("mytestvalue(extended)(further)"))
 	})
 
 	It("should validate imports by import executions", func() {
-		ctx, inst := Load("test11/ok")
+		ctx, _ := Load("test11/ok")
 		exec := imports.New(op)
-		err := exec.Ensure(ctx, inst)
+		err := exec.Ensure(ctx)
 		Expect(err).To(Succeed())
 	})
 
 	It("should reject wrong imports by import executions", func() {
 		ctx, inst := Load("test11/error")
 		exec := imports.New(op)
-		err := exec.Ensure(ctx, inst)
+		err := exec.Ensure(ctx)
 		Expect(err).NotTo(Succeed())
 		Expect(err.Error()).To(Equal("import validation failed: invalid test data:other"))
 		Expect(inst.Info.Status.Conditions[0].Type).To(Equal(lsv1alpha1.ConditionType("ValidateImports")))

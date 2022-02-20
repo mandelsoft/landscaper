@@ -33,8 +33,9 @@ func NewConstructor(op *installations.Operation) *Constructor {
 // Construct loads all imported data from the data sources (either installations or the landscape config)
 // and creates the imported configuration.
 // The imported data is added to installation resource.
-func (c *Constructor) Construct(ctx context.Context, inst *installations.Installation) error {
+func (c *Constructor) Construct(ctx context.Context) error {
 	var (
+		inst    = c.Inst
 		fldPath = field.NewPath(inst.Info.Name)
 	)
 
