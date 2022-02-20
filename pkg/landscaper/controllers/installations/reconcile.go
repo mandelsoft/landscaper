@@ -83,6 +83,10 @@ func (c *Controller) reconcile(ctx context.Context, inst *lsv1alpha1.Installatio
 		return nil
 	}
 
+	err = c.ConstructImports(ctx, instOp)
+	if err != nil {
+		return err
+	}
 	instOp.CurrentOperation = "Completing"
 	dataExports, targetExports, err := exports.NewConstructor(instOp).Construct(ctx)
 	if err != nil {
@@ -151,8 +155,7 @@ func (c *Controller) eligibleToUpdate(ctx context.Context, op *installations.Ope
 	return validator.CheckDependentInstallations(ctx)
 }
 
-// Update redeploys subinstallations and deploy items.
-func (c *Controller) Update(ctx context.Context, op *installations.Operation) error {
+func (c *Controller) ConstructImports(ctx context.Context, op *installations.Operation) error {
 	currOp := "Validate"
 	inst := op.Inst
 
@@ -167,12 +170,6 @@ func (c *Controller) Update(ctx context.Context, op *installations.Operation) er
 			currOp, "ImportsSatisfied", err.Error())
 	}
 
-	importExecution := imports.New(op)
-	if err := importExecution.Ensure(ctx, inst); err != nil {
-		return lserrors.NewWrappedError(err,
-			currOp, "ImportsSatisfied", err.Error())
-	}
-
 	currOp = "Reconcile"
 	// as all imports are satisfied we can collect and merge all imports
 	// and then start the executions
@@ -180,6 +177,30 @@ func (c *Controller) Update(ctx context.Context, op *installations.Operation) er
 	if err := constructor.Construct(ctx, inst); err != nil {
 		return lserrors.NewWrappedError(err,
 			currOp, "ConstructImports", err.Error())
+	}
+
+	// execute import executions of blueprint
+	importExecution := imports.New(op)
+	if err := importExecution.Ensure(ctx, inst); err != nil {
+		return lserrors.NewWrappedError(err,
+			currOp, "ConstructImports", err.Error())
+	}
+
+	if err := op.CreateOrUpdateImports(ctx); err != nil {
+		return lserrors.NewWrappedError(err,
+			currOp, "CreateOrUpdateImports", err.Error())
+	}
+	return nil
+}
+
+// Update redeploys subinstallations and deploy items.
+func (c *Controller) Update(ctx context.Context, op *installations.Operation) error {
+	currOp := "Reconcile"
+	inst := op.Inst
+
+	err := c.ConstructImports(ctx, op)
+	if err != nil {
+		return err
 	}
 
 	if err := op.CreateOrUpdateImports(ctx); err != nil {
