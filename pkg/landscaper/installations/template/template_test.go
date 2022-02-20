@@ -79,14 +79,13 @@ func runTestSuite(testdataDir, sharedTestdataDir string) {
 			blue.SubinstallationExecutions = exec
 			op := newTemplater(stateHandler, nil)
 
-			res, err := op.TemplateSubinstallationExecutions(template2.DeployExecutionOptions{
-				BlueprintExecutionOptions: template2.BlueprintExecutionOptions{
-					Blueprint: &blueprints.Blueprint{
+			res, err := op.TemplateSubinstallationExecutions(template2.NewDeployExecutionOptions(
+				template2.NewBlueprintExecutionOptions(nil,
+					&blueprints.Blueprint{
 						Info: blue,
 						Fs:   nil,
-					},
-				},
-			})
+					}, nil, nil, nil),
+			))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(HaveLen(1))
 			Expect(res[0].Name).To(Equal("my-subinstallation"))
@@ -105,15 +104,15 @@ func runTestSuite(testdataDir, sharedTestdataDir string) {
 			blue.SubinstallationExecutions = exec
 			op := newTemplater(stateHandler, nil)
 
-			res, err := op.TemplateSubinstallationExecutions(template2.DeployExecutionOptions{
-				BlueprintExecutionOptions: template2.BlueprintExecutionOptions{
-					Blueprint: &blueprints.Blueprint{
+			res, err := op.TemplateSubinstallationExecutions(template2.NewDeployExecutionOptions(
+				template2.NewBlueprintExecutionOptions(nil,
+					&blueprints.Blueprint{
 						Info: blue,
 						Fs:   nil,
-					},
-					Imports: map[string]interface{}{"blueprintName": "some-blueprint-name"},
-				},
-			})
+					}, nil, nil,
+					map[string]interface{}{"blueprintName": "some-blueprint-name"},
+				),
+			))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(HaveLen(1))
 			Expect(res[0].Name).To(Equal("my-subinstallation"))
@@ -481,14 +480,13 @@ func runTestSuite(testdataDir, sharedTestdataDir string) {
 			blue.ExportExecutions = exec
 			op := newTemplater(stateHandler, nil)
 
-			res, err := op.TemplateExportExecutions(template2.ExportExecutionOptions{
-				BlueprintExecutionOptions: template2.BlueprintExecutionOptions{
-					Blueprint: &blueprints.Blueprint{
+			res, err := op.TemplateExportExecutions(template2.NewExportExecutionOptions(
+				template2.NewBlueprintExecutionOptions(nil,
+					&blueprints.Blueprint{
 						Info: blue,
 						Fs:   nil,
-					},
-				},
-			})
+					}, nil, nil, nil),
+				nil))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(HaveKeyWithValue("testKey", "myval"))
 		})
@@ -503,15 +501,14 @@ func runTestSuite(testdataDir, sharedTestdataDir string) {
 			blue.ExportExecutions = exec
 			op := newTemplater(stateHandler, nil)
 
-			res, err := op.TemplateExportExecutions(template2.ExportExecutionOptions{
-				BlueprintExecutionOptions: template2.BlueprintExecutionOptions{
-					Blueprint: &blueprints.Blueprint{
+			res, err := op.TemplateExportExecutions(template2.NewExportExecutionOptions(
+				template2.NewBlueprintExecutionOptions(nil,
+					&blueprints.Blueprint{
 						Info: blue,
 						Fs:   nil,
-					},
-				},
-				Exports: map[string]interface{}{"version": "0.0.0"},
-			})
+					}, nil, nil, nil),
+				map[string]interface{}{"version": "0.0.0"},
+			))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(HaveKeyWithValue("image", "my-custom-image:0.0.0"))
 		})
@@ -530,14 +527,14 @@ func runTestSuite(testdataDir, sharedTestdataDir string) {
 			err = vfs.WriteFile(memFs, "VERSION", []byte("0.0.0"), os.ModePerm)
 			Expect(err).ToNot(HaveOccurred())
 
-			res, err := op.TemplateExportExecutions(template2.ExportExecutionOptions{
-				BlueprintExecutionOptions: template2.BlueprintExecutionOptions{
-					Blueprint: &blueprints.Blueprint{
+			res, err := op.TemplateExportExecutions(template2.NewExportExecutionOptions(
+				template2.NewBlueprintExecutionOptions(nil,
+					&blueprints.Blueprint{
 						Info: blue,
 						Fs:   memFs,
-					},
-				},
-			})
+					}, nil, nil, nil),
+				nil,
+			))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res).To(HaveLen(1))
 			Expect(res).To(HaveKeyWithValue("image", "my-custom-image:0.0.0"))

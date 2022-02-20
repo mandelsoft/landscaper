@@ -13,13 +13,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/yaml"
 
-	"github.com/gardener/landscaper/pkg/landscaper/installations/template"
-	"github.com/gardener/landscaper/pkg/landscaper/templating"
-
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/landscaper/dataobjects"
 	"github.com/gardener/landscaper/pkg/landscaper/dataobjects/jsonpath"
 	"github.com/gardener/landscaper/pkg/landscaper/installations"
+	"github.com/gardener/landscaper/pkg/landscaper/installations/template"
 )
 
 // NewConstructor creates a new Import Constructor.
@@ -61,7 +59,7 @@ func (c *Constructor) Construct(ctx context.Context) error {
 		return err
 	}
 
-	templatedDataMappings, err := c.templateDataMappings(fldPath, importedDataObjects, importedTargets, importedTargetLists, importedComponentDescriptors, importedComponentDescriptorLists) // returns a map mapping logical names to data content
+	instImports, templatedDataMappings, err := c.templateDataMappings(fldPath, importedDataObjects, importedTargets, importedTargetLists, importedComponentDescriptors, importedComponentDescriptorLists) // returns a map mapping logical names to data content
 	if err != nil {
 		return err
 	}
@@ -76,6 +74,8 @@ func (c *Constructor) Construct(ctx context.Context) error {
 	c.SetTargetListImports(importedTargetLists)
 
 	inst.SetImports(imports)
+	inst.SetInstImports(instImports)
+	inst.SetImportMappings(templatedDataMappings)
 	return nil
 }
 
@@ -225,8 +225,9 @@ func (c *Constructor) templateDataMappings(
 	importedTargets map[string]*dataobjects.Target,
 	importedTargetLists map[string]*dataobjects.TargetList,
 	importedComponentDescriptors map[string]*dataobjects.ComponentDescriptor,
-	importedComponentDescriptorLists map[string]*dataobjects.ComponentDescriptorList) (map[string]interface{}, error) {
+	importedComponentDescriptorLists map[string]*dataobjects.ComponentDescriptorList) (map[string]interface{}, map[string]interface{}, error) {
 
+	_ = importedComponentDescriptorLists
 	templateValues := map[string]interface{}{}
 	for name, do := range importedDataObjects {
 		templateValues[name] = do.Data
@@ -235,33 +236,37 @@ func (c *Constructor) templateDataMappings(
 		var err error
 		templateValues[name], err = target.GetData()
 		if err != nil {
-			return nil, fmt.Errorf("unable to get target data for import %s", name)
+			return nil, nil, fmt.Errorf("unable to get target data for import %s", name)
 		}
 	}
 	for name, targetlist := range importedTargetLists {
 		var err error
 		templateValues[name], err = targetlist.GetData()
 		if err != nil {
-			return nil, fmt.Errorf("unable to get targetlist data for import %s", name)
+			return nil, nil, fmt.Errorf("unable to get targetlist data for import %s", name)
 		}
 	}
 	for name, cd := range importedComponentDescriptors {
 		var err error
 		templateValues[name], err = cd.GetData()
 		if err != nil {
-			return nil, fmt.Errorf("unable to get target data for import %s", name)
+			return nil, nil, fmt.Errorf("unable to get target data for import %s", name)
 		}
 	}
 
-	templater := template.NewBasic(nil) // TODO: find appropriate blob resolver
+	imports := map[string]interface{}{}
+	for k, v := range templateValues {
+		imports[k] = v
+	}
+	templater := template.NewBasic(c.Operation.BlobResolver)
 
-	tctx := &templating.TemplateContext{
-		Blueprint: nil,
-		Cd:        nil,
-		CdList:    nil,
-		Values: map[string]interface{}{
-			"imports": templateValues,
-		},
+	opts := template.NewExecutionOptions(c.Operation.Inst.Info, c.Operation.Inst.Blueprint, c.Operation.ComponentDescriptor, c.Operation.ResolvedComponentDescriptorList)
+
+	tctx, err := opts.TemplateContext(map[string]interface{}{
+		"imports": templateValues,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to construct template context: %w", err)
 	}
 
 	values := make(map[string]interface{})
@@ -269,7 +274,7 @@ func (c *Constructor) templateDataMappings(
 		output := DataMappingOutput{}
 		_, err := templater.Execute("import mapping", tmplExec.Type, tmplExec.Name, tmplExec.Template.RawMessage, nil, tctx, &output)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if output.Mapping != nil {
@@ -282,30 +287,30 @@ func (c *Constructor) templateDataMappings(
 
 	spiff, err := spiffing.New().WithFunctions(spiffing.NewFunctions()).WithValues(templateValues)
 	if err != nil {
-		return nil, fmt.Errorf("unable to init spiff templater: %w", err)
+		return nil, nil, fmt.Errorf("unable to init spiff templater: %w", err)
 	}
 	for key, dataMapping := range c.Inst.Info.Spec.ImportDataMappings {
 		impPath := fldPath.Child(key)
 
 		tmpl, err := spiffyaml.Unmarshal(key, dataMapping.RawMessage)
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse import mapping template %s: %w", impPath.String(), err)
+			return nil, nil, fmt.Errorf("unable to parse import mapping template %s: %w", impPath.String(), err)
 		}
 
 		res, err := spiff.Cascade(tmpl, nil)
 		if err != nil {
-			return nil, fmt.Errorf("unable to template import mapping template %s: %w", impPath.String(), err)
+			return nil, nil, fmt.Errorf("unable to template import mapping template %s: %w", impPath.String(), err)
 		}
 
 		dataBytes, err := spiffyaml.Marshal(res)
 		if err != nil {
-			return nil, fmt.Errorf("unable to marshal templated import mapping %s: %w", impPath.String(), err)
+			return nil, nil, fmt.Errorf("unable to marshal templated import mapping %s: %w", impPath.String(), err)
 		}
 		var data interface{}
 		if err := yaml.Unmarshal(dataBytes, &data); err != nil {
-			return nil, fmt.Errorf("unable to unmarshal templated import mapping %s: %w", impPath.String(), err)
+			return nil, nil, fmt.Errorf("unable to unmarshal templated import mapping %s: %w", impPath.String(), err)
 		}
 		values[key] = data
 	}
-	return values, nil
+	return imports, values, nil
 }

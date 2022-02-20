@@ -8,33 +8,57 @@ import (
 	"fmt"
 
 	cdv2 "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/gardener/landscaper/pkg/landscaper/templating"
 
 	lsv1alpha1 "github.com/gardener/landscaper/apis/core/v1alpha1"
 	"github.com/gardener/landscaper/pkg/landscaper/blueprints"
 	"github.com/gardener/landscaper/pkg/utils"
 )
 
-// BlueprintExecutionOptions describes the base options for templating of all blueprint executions.
-type BlueprintExecutionOptions struct {
+// ExecutionOptions describes the base options for templating of all executions.
+type ExecutionOptions struct {
+	ValuesFunc           func() (map[string]interface{}, error)
 	Installation         *lsv1alpha1.Installation
 	Blueprint            *blueprints.Blueprint
 	ComponentDescriptor  *cdv2.ComponentDescriptor
 	ComponentDescriptors *cdv2.ComponentDescriptorList
-	Imports              map[string]interface{}
 }
 
-// NewBlueprintExecutionOptions create new basic blueprint execution options
-func NewBlueprintExecutionOptions(installation *lsv1alpha1.Installation, blueprint *blueprints.Blueprint, cd *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList, imports map[string]interface{}) BlueprintExecutionOptions {
-	return BlueprintExecutionOptions{
+// NewExecutionOptions create new basic blueprint execution options
+func NewExecutionOptions(installation *lsv1alpha1.Installation, blueprint *blueprints.Blueprint, cd *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList, values ...func() (map[string]interface{}, error)) ExecutionOptions {
+	o := ExecutionOptions{
 		Installation:         installation,
 		Blueprint:            blueprint,
 		ComponentDescriptor:  cd,
 		ComponentDescriptors: cdList,
-		Imports:              imports,
 	}
+	if len(values) > 0 && values[0] != nil {
+		o.ValuesFunc = values[0]
+	} else {
+		o.ValuesFunc = o.Values
+	}
+	return o
 }
 
-func (o *BlueprintExecutionOptions) Values() (map[string]interface{}, error) {
+func (o *ExecutionOptions) TemplateContext(values map[string]interface{}) (*templating.TemplateContext, error) {
+	effValues, err := o.ValuesFunc()
+	if err != nil {
+		return nil, err
+	}
+	if values != nil {
+		for k, v := range values {
+			effValues[k] = v
+		}
+	}
+	return &templating.TemplateContext{
+		Blueprint: o.Blueprint,
+		Cd:        o.ComponentDescriptor,
+		CdList:    o.ComponentDescriptors,
+		Values:    effValues,
+	}, nil
+}
+
+func (o *ExecutionOptions) Values() (map[string]interface{}, error) {
 	// marshal and unmarshal resolved component descriptor
 	component, err := serializeComponentDescriptor(o.ComponentDescriptor)
 	if err != nil {
@@ -48,7 +72,6 @@ func (o *BlueprintExecutionOptions) Values() (map[string]interface{}, error) {
 	values := map[string]interface{}{
 		"cd":         component,
 		"components": components,
-		"imports":    o.Imports,
 	}
 
 	// add blueprint and component descriptor ref information to the input values
@@ -71,6 +94,31 @@ func (o *BlueprintExecutionOptions) Values() (map[string]interface{}, error) {
 	return values, nil
 }
 
+// BlueprintExecutionOptions describes the base options for templating of all blueprint executions.
+type BlueprintExecutionOptions struct {
+	ExecutionOptions
+	Imports map[string]interface{}
+}
+
+// NewBlueprintExecutionOptions create new basic blueprint execution options
+func NewBlueprintExecutionOptions(installation *lsv1alpha1.Installation, blueprint *blueprints.Blueprint, cd *cdv2.ComponentDescriptor, cdList *cdv2.ComponentDescriptorList, imports map[string]interface{}) BlueprintExecutionOptions {
+	o := BlueprintExecutionOptions{
+		ExecutionOptions: NewExecutionOptions(installation, blueprint, cd, cdList),
+		Imports:          imports,
+	}
+	o.ValuesFunc = o.Values
+	return o
+}
+
+func (o *BlueprintExecutionOptions) Values() (map[string]interface{}, error) {
+	values, err := o.ExecutionOptions.Values()
+	if err != nil {
+		return nil, err
+	}
+	values["imports"] = o.Imports
+	return values, nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // DeployExecutionOptions describes the options for templating the deploy executions.
@@ -79,9 +127,11 @@ type DeployExecutionOptions struct {
 }
 
 func NewDeployExecutionOptions(base BlueprintExecutionOptions) DeployExecutionOptions {
-	return DeployExecutionOptions{
+	o := DeployExecutionOptions{
 		BlueprintExecutionOptions: base,
 	}
+	o.ValuesFunc = o.Values
+	return o
 }
 
 func (o *DeployExecutionOptions) Values() (map[string]interface{}, error) {
@@ -97,10 +147,12 @@ type ExportExecutionOptions struct {
 }
 
 func NewExportExecutionOptions(base BlueprintExecutionOptions, exports map[string]interface{}) ExportExecutionOptions {
-	return ExportExecutionOptions{
+	o := ExportExecutionOptions{
 		BlueprintExecutionOptions: base,
 		Exports:                   exports,
 	}
+	o.ValuesFunc = o.Values
+	return o
 }
 
 func (o *ExportExecutionOptions) Values() (map[string]interface{}, error) {

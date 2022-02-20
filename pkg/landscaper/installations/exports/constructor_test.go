@@ -40,6 +40,16 @@ var _ = Describe("Constructor", func() {
 		fakeCompRepo      ctf.ComponentResolver
 	)
 
+	CreateOperation := func(instName string) (context.Context, *installations.Operation, error) {
+		ctx := context.Background()
+		inst, err := installations.CreateInternalInstallation(ctx, fakeCompRepo, fakeInstallations[instName])
+		if err != nil {
+			return nil, nil, err
+		}
+		op, err := installations.NewInstallationOperation(ctx, logr.Discard(), fakeClient, api.LandscaperScheme, record.NewFakeRecorder(1024), fakeCompRepo, inst)
+		return ctx, op, err
+	}
+
 	BeforeEach(func() {
 		var (
 			err   error
@@ -47,6 +57,8 @@ var _ = Describe("Constructor", func() {
 		)
 		fakeClient, state, err = envtest.NewFakeClientFromPath("./testdata/state")
 		Expect(err).ToNot(HaveOccurred())
+
+		createDefaultContextsForNamespace(fakeClient)
 
 		fakeInstallations = state.Installations
 		Expect(testutils.CreateExampleDefaultContext(context.TODO(), fakeClient, "test1", "test2", "test3", "test4"))
@@ -197,10 +209,8 @@ var _ = Describe("Constructor", func() {
 	})
 
 	It("should construct the exported config from its execution by data mappings", func() {
-		ctx := context.Background()
-		inInstRoot, err := installations.CreateInternalInstallation(ctx, op.ComponentsRegistry(), fakeInstallations["test5/root"])
+		ctx, op, err := CreateOperation("test5/root")
 		Expect(err).ToNot(HaveOccurred())
-		op.Inst = inInstRoot
 
 		c := exports.NewConstructor(op)
 		res, _, err := c.Construct(ctx)

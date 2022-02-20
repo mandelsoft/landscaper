@@ -85,16 +85,9 @@ func (t *Templater) execute(kind string, prefix string, tmplExec lsv1alpha1.Temp
 }
 
 func (o *Templater) TemplateImportExecutions(opts BlueprintExecutionOptions) ([]string, map[string]interface{}, error) {
-	values, err := opts.Values()
+	tctx, err := opts.TemplateContext(nil)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	tctx := &templating.TemplateContext{
-		Blueprint: opts.Blueprint,
-		Cd:        opts.ComponentDescriptor,
-		CdList:    opts.ComponentDescriptors,
-		Values:    values,
 	}
 
 	errorList := []string{}
@@ -110,10 +103,10 @@ func (o *Templater) TemplateImportExecutions(opts BlueprintExecutionOptions) ([]
 
 		if output.Bindings != nil {
 			var imports map[string]interface{}
-			imp := values["imports"]
+			imp := tctx.Values["imports"]
 			if imports == nil {
 				imports = map[string]interface{}{}
-				values["imports"] = imports
+				tctx.Values["imports"] = imports
 			} else {
 				imports = imp.(map[string]interface{})
 			}
@@ -134,15 +127,9 @@ func (o *Templater) TemplateImportExecutions(opts BlueprintExecutionOptions) ([]
 // TemplateSubinstallationExecutions templates all subinstallation executions and
 // returns a aggregated list of all templated installation templates.
 func (o *Templater) TemplateSubinstallationExecutions(opts DeployExecutionOptions) ([]*lsv1alpha1.InstallationTemplate, error) {
-	values, err := opts.Values()
+	tctx, err := opts.TemplateContext(nil)
 	if err != nil {
 		return nil, err
-	}
-	tctx := &templating.TemplateContext{
-		Blueprint: opts.Blueprint,
-		Cd:        opts.ComponentDescriptor,
-		CdList:    opts.ComponentDescriptors,
-		Values:    values,
 	}
 
 	installationTemplates := make([]*lsv1alpha1.InstallationTemplate, 0)
@@ -160,15 +147,9 @@ func (o *Templater) TemplateSubinstallationExecutions(opts DeployExecutionOption
 
 // TemplateDeployExecutions templates all deploy executions and returns a aggregated list of all templated deploy item templates.
 func (o *Templater) TemplateDeployExecutions(opts DeployExecutionOptions) ([]DeployItemSpecification, error) {
-	values, err := opts.Values()
+	tctx, err := opts.TemplateContext(nil)
 	if err != nil {
 		return nil, err
-	}
-	tctx := &templating.TemplateContext{
-		Blueprint: opts.Blueprint,
-		Cd:        opts.ComponentDescriptor,
-		CdList:    opts.ComponentDescriptors,
-		Values:    values,
 	}
 
 	deployItemTemplateList := []DeployItemSpecification{}
@@ -186,15 +167,9 @@ func (o *Templater) TemplateDeployExecutions(opts DeployExecutionOptions) ([]Dep
 
 // TemplateExportExecutions templates all exports.
 func (o *Templater) TemplateExportExecutions(opts ExportExecutionOptions) (map[string]interface{}, error) {
-	values, err := opts.Values()
+	tctx, err := opts.TemplateContext(nil)
 	if err != nil {
 		return nil, err
-	}
-	tctx := &templating.TemplateContext{
-		Blueprint: opts.Blueprint,
-		Cd:        opts.ComponentDescriptor,
-		CdList:    opts.ComponentDescriptors,
-		Values:    values,
 	}
 
 	exportData := make(map[string]interface{})

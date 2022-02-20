@@ -15,8 +15,10 @@ import (
 
 // InstallationBase is the internal representation of an installation without resolved blueprint.
 type InstallationBase struct {
-	Imports map[string]interface{}
-	Info    *lsv1alpha1.Installation
+	Imports        map[string]interface{}
+	InstImports    map[string]interface{}
+	ImportMappings map[string]interface{}
+	Info           *lsv1alpha1.Installation
 	// indexes the import state with from/to as key
 	importsStatus ImportStatus
 }
@@ -56,6 +58,22 @@ func (i *InstallationBase) GetImports() map[string]interface{} {
 
 func (i *InstallationBase) SetImports(imports map[string]interface{}) {
 	i.Imports = imports
+}
+
+func (i *InstallationBase) GetInstImports() map[string]interface{} {
+	return i.InstImports
+}
+
+func (i *InstallationBase) SetInstImports(imports map[string]interface{}) {
+	i.InstImports = imports
+}
+
+func (i *InstallationBase) GetImportMappings() map[string]interface{} {
+	return i.ImportMappings
+}
+
+func (i *InstallationBase) SetImportMappings(imports map[string]interface{}) {
+	i.ImportMappings = imports
 }
 
 func (i *InstallationBase) GetInfo() *lsv1alpha1.Installation {

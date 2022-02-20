@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"github.com/gardener/landscaper/pkg/landscaper/installations/imports"
-	"github.com/gardener/landscaper/pkg/landscaper/templating"
 	"github.com/mandelsoft/spiff/spiffing"
 	spiffyaml "github.com/mandelsoft/spiff/yaml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,6 +116,7 @@ func (c *Constructor) Construct(ctx context.Context) ([]*dataobjects.DataObject,
 		}
 	}
 
+	// Handle export mappings for installation
 	templatedDataMappings, err := c.templateExports(fldPath, exports)
 	if err != nil {
 		return nil, nil, err
@@ -163,19 +163,21 @@ func (c *Constructor) Construct(ctx context.Context) ([]*dataobjects.DataObject,
 }
 
 func (c *Constructor) templateExports(fldPath *field.Path, exports map[string]interface{}) (map[string]interface{}, error) {
-	templater := lstmpl.NewBasic(nil) // TODO: find appropriate blob resolver
+	templater := lstmpl.NewBasic(c.Operation.BlobResolver)
 
 	templateValues := map[string]interface{}{}
 	for k, v := range exports {
 		templateValues[k] = v
 	}
-	tctx := &templating.TemplateContext{
-		Blueprint: nil,
-		Cd:        nil,
-		CdList:    nil,
-		Values: map[string]interface{}{
-			"exports": templateValues,
-		},
+
+	opts := lstmpl.NewExecutionOptions(c.Inst.Info, c.Inst.Blueprint, c.Operation.ComponentDescriptor, c.Operation.ResolvedComponentDescriptorList)
+	tctx, err := opts.TemplateContext(map[string]interface{}{
+		"exports":       templateValues,
+		"imports":       c.Inst.GetInstImports(),
+		"importmapping": c.Inst.GetImportMappings(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to construct template context: %w", err)
 	}
 
 	values := make(map[string]interface{})

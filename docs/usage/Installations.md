@@ -733,7 +733,28 @@ _Import Data Executions_ are specified in the spec field `importDataExecutions`.
 This may contain a list of template [executions](./Templating.md). Those 
 executions do not support the `file` options to configure a template.
 
-The executions get one binding `imports` with the imports of the installation.
+
+The template [executions](./Templating.md) get the following binding:
+
+- **`imports`**
+
+  the imports of the installation, as a mapping from import name to assigned values
+
+
+- **`cd`**
+
+  the component descriptor of the owning component
+
+
+- **`blueprintDef`**
+
+  the blueprint definition, as given in the installation (not the blueprint.yaml itself)
+
+
+- **`componentDescriptorDef`**
+
+  the component descriptor definition, as given in the installation (not the component descriptor itself)
+
 
 A template execution must return a YAML document with at least the top-level
 map node `mapping`. It contains mappings for blueprint imports.
@@ -998,7 +1019,41 @@ _Export Data Executions_ are specified in the spec field `exportDataExecutions`.
 This may contain a list of template [executions](./Templating.md). Those
 executions do not support the `file` options to configure a template.
 
-The executions get one binding `exports` with the exports of the blueprint.
+
+The template [executions](./Templating.md) get the following binding:
+
+- **`exports`**
+
+  the exports of the blueprint, as a mapping from export name to assigned values
+
+
+- **`imports`**
+
+  the original installation imports, as a mapping from import name to assigned values
+
+
+- **`importmapping`**
+
+  the import mappings of the installation. This gives access to the earlier 
+  [import data transformations](#import-data-transformation) including additional
+  keys provided that are not passed as imports to the blueprint.
+
+
+- **`cd`**
+
+  the component descriptor of the owning component
+
+
+- **`blueprintDef`**
+
+  the blueprint definition, as given in the installation (not the blueprint.yaml itself)
+
+
+- **`componentDescriptorDef`**
+
+  the component descriptor definition, as given in the installation (not the component descriptor itself)
+
+
 
 A template execution must return a YAML document with at least the top-level
 map node `mapping`. It contains mappings for installation exports.

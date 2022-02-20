@@ -12,7 +12,7 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	template2 "github.com/gardener/landscaper/pkg/landscaper/installations/template"
+	lstmpl "github.com/gardener/landscaper/pkg/landscaper/installations/template"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -244,14 +244,14 @@ func (o *Operation) cleanupOrphanedSubInstallations(ctx context.Context,
 func (o *Operation) getInstallationTemplates() ([]*lsv1alpha1.InstallationTemplate, error) {
 	var instTmpls []*lsv1alpha1.InstallationTemplate
 	if len(o.Inst.Blueprint.Info.SubinstallationExecutions) != 0 {
-		templateStateHandler := template2.KubernetesStateHandler{
+		templateStateHandler := lstmpl.KubernetesStateHandler{
 			KubeClient: o.Client(),
 			Inst:       o.Inst.Info,
 		}
 		//tmpl := template.New(gotemplate.New(o.BlobResolver, templateStateHandler), spiff.New(templateStateHandler))
-		tmpl := template2.New(templateStateHandler, o.BlobResolver)
-		templatedTmpls, err := tmpl.TemplateSubinstallationExecutions(template2.NewDeployExecutionOptions(
-			template2.NewBlueprintExecutionOptions(
+		tmpl := lstmpl.New(templateStateHandler, o.BlobResolver)
+		templatedTmpls, err := tmpl.TemplateSubinstallationExecutions(lstmpl.NewDeployExecutionOptions(
+			lstmpl.NewBlueprintExecutionOptions(
 				o.Context().External.InjectComponentDescriptorRef(o.Inst.Info.DeepCopy()),
 				o.Inst.Blueprint,
 				o.ComponentDescriptor,
